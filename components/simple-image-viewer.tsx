@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
 import { X } from "lucide-react"
 
 interface SimpleImageViewerProps {
@@ -29,24 +28,25 @@ export function SimpleImageViewer({ src, alt, onClose }: SimpleImageViewerProps)
   if (!isMounted) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80" onClick={onClose}>
-      <div className="relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90" onClick={onClose}>
+      <div className="relative max-w-[90vw] max-h-[90vh]">
         <button
-          className="absolute top-2 right-2 z-10 flex items-center justify-center w-8 h-8 bg-white rounded-full"
+          className="absolute top-4 right-4 z-10 flex items-center justify-center w-10 h-10 bg-white rounded-full"
           onClick={onClose}
         >
-          <X className="w-5 h-5" />
+          <X className="w-6 h-6" />
         </button>
-        <div className="w-[768px] h-[496px] relative">
-          <Image
-            src={src || "/placeholder.svg"}
-            alt={alt}
-            fill
-            className="object-contain"
-            onClick={(e) => e.stopPropagation()}
-            unoptimized
-          />
-        </div>
+
+        <img
+          src={src || "/placeholder.svg"}
+          alt={alt}
+          className="max-w-full max-h-[85vh] object-contain"
+          style={{
+            display: "block",
+            margin: "0 auto",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
       </div>
     </div>
   )

@@ -4,14 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
@@ -124,6 +117,12 @@ export default function TestPage() {
       // Generate a new test sequence
       const sequence = generateTestSequence()
       setTestSequence(sequence)
+
+      // If already submitted, mark all questions as completed
+      if (hasSubmittedInSession()) {
+        const allCompleted = new Set(Array.from({ length: sequence.length }, (_, i) => i))
+        setCompletedQuestions(allCompleted)
+      }
 
       // Check if Supabase environment variables are available
       if (!hasSupabaseEnvVars()) {
@@ -465,11 +464,12 @@ export default function TestPage() {
 
           {hasSubmittedInSession() && (
             <Alert variant="warning" className="mb-1 py-1 bg-amber-50 border-amber-200">
-              <Lock className="h-4 w-4" />
-              <AlertDescription>
-                You have already submitted your results in this session. You can review your answers, but you cannot
-                submit again.
-              </AlertDescription>
+              <div className="flex items-center">
+                <Lock className="h-4 w-4 mr-2 flex-shrink-0" />
+                <AlertDescription className="text-sm">
+                  You have already submitted your results. You can review your answers, but cannot submit again.
+                </AlertDescription>
+              </div>
             </Alert>
           )}
 
@@ -513,54 +513,60 @@ export default function TestPage() {
 
       {/* Completion Dialog */}
       <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Complete Evaluation</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="p-4 w-[400px] max-w-[95vw]">
+          <div className="text-center mb-4">
+            <h2 className="text-xl font-semibold mb-2">Complete Evaluation</h2>
+            <p className="text-sm text-gray-600">
               You have ranked all the images. Would you like to submit your evaluation now?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </p>
+          </div>
+          <div className="flex justify-end space-x-2 mt-2">
             <Button variant="outline" onClick={() => setShowCompletionDialog(false)}>
               Review Answers
             </Button>
             <Button onClick={submitAllRankings} disabled={submitting || hasSubmittedInSession()}>
               {submitting ? "Submitting..." : "Submit Evaluation"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Export Dialog */}
       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Database Connection Error</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="p-4 w-[450px] max-w-[95vw]">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold mb-2">Database Connection Error</h2>
+            <p className="text-sm text-gray-600 mb-4">
               {supabaseError && supabaseError.includes("environment variables")
                 ? "The database connection is not configured. You can export your results as a CSV file."
                 : "We couldn't connect to our database to save your results. This could be due to network issues or because the app hasn't been deployed yet."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>Error: {supabaseError}</AlertDescription>
+            </p>
+            <Alert variant="destructive" className="mb-4 py-2">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              <AlertDescription className="text-xs">Error: {supabaseError}</AlertDescription>
             </Alert>
-            <p className="mb-4">
+            <p className="text-sm mb-2">
               You can export your results as a CSV file, which you can then send to the researchers or upload later.
             </p>
-            <p className="mb-4">Please send the downloaded CSV file to one of these email addresses:</p>
+            <p className="text-sm font-medium mb-2">
+              Please send the downloaded CSV file to one of these email addresses:
+            </p>
             <div className="flex flex-col gap-1 mb-4">
-              <a href="mailto:simone.sarrocco@unibas.ch" className="text-blue-600 hover:underline flex items-center">
+              <a
+                href="mailto:simone.sarrocco@unibas.ch"
+                className="text-blue-600 hover:underline flex items-center text-sm"
+              >
                 <Mail className="h-4 w-4 mr-1" /> simone.sarrocco@unibas.ch
               </a>
-              <a href="mailto:philippe.valmaggia@unibas.ch" className="text-blue-600 hover:underline flex items-center">
+              <a
+                href="mailto:philippe.valmaggia@unibas.ch"
+                className="text-blue-600 hover:underline flex items-center text-sm"
+              >
                 <Mail className="h-4 w-4 mr-1" /> philippe.valmaggia@unibas.ch
               </a>
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setShowExportDialog(false)}>
               Go Back
             </Button>
@@ -568,7 +574,7 @@ export default function TestPage() {
               <Download className="mr-2 h-4 w-4" />
               Export Results as CSV
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

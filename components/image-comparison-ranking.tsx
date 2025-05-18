@@ -5,9 +5,9 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { ZoomIn } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ImageViewer } from "./image-viewer"
 
 // Helper function to get border color class based on rank position
 const getBorderColorClass = (position: number): string => {
@@ -349,28 +349,15 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
         <Button onClick={handleSubmit}>Submit Ranking</Button>
       </div>
 
-      {/* Full-size image dialog - now with white background */}
-      <Dialog open={!!fullSizeImage} onOpenChange={() => setFullSizeImage(null)}>
-        <DialogContent
-          className="max-w-[90vw] max-h-[90vh] p-0 overflow-hidden flex items-center justify-center bg-white border-0 shadow-xl"
-          onClick={() => setFullSizeImage(null)}
-        >
-          {fullSizeImage && (
-            <div className="relative flex items-center justify-center p-4">
-              <Image
-                src={fullSizeImage.src || "/placeholder.svg"}
-                alt={fullSizeImage.alt}
-                width={768}
-                height={496}
-                className="border border-gray-300"
-                style={{ objectFit: "none" }}
-                onClick={(e) => e.stopPropagation()}
-                unoptimized
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Full-size image viewer */}
+      {fullSizeImage && (
+        <ImageViewer
+          src={fullSizeImage.src || "/placeholder.svg"}
+          alt={fullSizeImage.alt}
+          isOpen={!!fullSizeImage}
+          onClose={() => setFullSizeImage(null)}
+        />
+      )}
     </div>
   )
 }

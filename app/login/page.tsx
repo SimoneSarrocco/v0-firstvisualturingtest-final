@@ -87,70 +87,87 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto py-10 px-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Clinician Information</CardTitle>
-          <CardDescription>
-            Please provide your information to participate in the OCT image enhancement evaluation.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name (optional)</Label>
-              <Input id="name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "450px",
+          padding: "16px",
+          margin: "0 auto",
+        }}
+      >
+        <Card style={{ boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" }}>
+          <CardHeader>
+            <CardTitle>Clinician Information</CardTitle>
+            <CardDescription>
+              Please provide your information to participate in the OCT image enhancement evaluation.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name (optional)</Label>
+                <Input id="name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="institution">Institution (optional)</Label>
-              <Input
-                id="institution"
-                placeholder="Your institution"
-                value={institution}
-                onChange={(e) => setInstitution(e.target.value)}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="institution">Institution (optional)</Label>
+                <Input
+                  id="institution"
+                  placeholder="Your institution"
+                  value={institution}
+                  onChange={(e) => setInstitution(e.target.value)}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="experience" className="after:content-['*'] after:ml-0.5 after:text-red-500">
-                Experience with OCT Images
-              </Label>
-              <RadioGroup value={experience} onValueChange={setExperience} className="flex flex-col space-y-1">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="less_than_5" id="less" />
-                  <Label htmlFor="less" className="font-normal">
-                    Less than 5 years
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="5_or_more_years" id="more" />
-                  <Label htmlFor="more" className="font-normal">
-                    5 or more years
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="experience" className="after:content-['*'] after:ml-0.5 after:text-red-500">
+                  Experience with OCT Images
+                </Label>
+                <RadioGroup value={experience} onValueChange={setExperience} className="flex flex-col space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="less_than_5" id="less" />
+                    <Label htmlFor="less" className="font-normal">
+                      Less than 5 years
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="5_or_more_years" id="more" />
+                    <Label htmlFor="more" className="font-normal">
+                      5 or more years
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
 
-            {connectionError && (
-              <Alert variant="warning" className="bg-amber-50 border-amber-200">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Warning: Could not connect to the database. Your information will be saved locally, and you can still
-                  proceed with the evaluation.
-                </AlertDescription>
-              </Alert>
-            )}
+              {connectionError && (
+                <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Warning: Could not connect to the database. Your information will be saved locally, and you can
+                    still proceed with the evaluation.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-            {error && <p className="text-sm text-red-500">{error}</p>}
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Processing..." : "Continue to Instructions"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+              {error && <p className="text-sm text-red-500">{error}</p>}
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Processing..." : "Continue to Instructions"}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
     </div>
   )
 }
