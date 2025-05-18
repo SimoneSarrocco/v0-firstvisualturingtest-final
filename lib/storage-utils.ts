@@ -15,6 +15,7 @@ const COMPLETED_QUESTIONS_KEY = "oct_completed_questions"
 const CURRENT_IMAGE_INDEX_KEY = "oct_current_image_index"
 const SESSION_ID_KEY = "oct_session_id"
 const SUBMISSION_TIMESTAMP_KEY = "oct_submission_timestamp"
+const TEST_SEQUENCE_KEY = "oct_test_sequence"
 
 // Generate a unique device ID
 export function getOrCreateDeviceId(): string {
@@ -44,16 +45,16 @@ export function generateClinicianId(): string {
 // Generate a unique session ID
 export function getOrCreateSessionId(): string {
   try {
-    let sessionId = sessionStorage.getItem(SESSION_ID_KEY)
+    let sessionId = localStorage.getItem(SESSION_ID_KEY) // Changed from sessionStorage to localStorage for persistence
 
     if (!sessionId) {
       sessionId = "session_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 9)
-      sessionStorage.setItem(SESSION_ID_KEY, sessionId)
+      localStorage.setItem(SESSION_ID_KEY, sessionId)
     }
 
     return sessionId
   } catch (error) {
-    console.error("Error accessing sessionStorage:", error)
+    console.error("Error accessing localStorage:", error)
     return "fallback_session_id"
   }
 }
@@ -61,7 +62,7 @@ export function getOrCreateSessionId(): string {
 // Check if results have been submitted in this session
 export function hasSubmittedInSession(): boolean {
   try {
-    return sessionStorage.getItem(SUBMISSION_TIMESTAMP_KEY) !== null
+    return localStorage.getItem(SUBMISSION_TIMESTAMP_KEY) !== null // Changed from sessionStorage to localStorage
   } catch (error) {
     console.error("Error checking submission status:", error)
     return false
@@ -71,7 +72,7 @@ export function hasSubmittedInSession(): boolean {
 // Mark results as submitted in this session
 export function markSubmittedInSession(): void {
   try {
-    sessionStorage.setItem(SUBMISSION_TIMESTAMP_KEY, new Date().toISOString())
+    localStorage.setItem(SUBMISSION_TIMESTAMP_KEY, new Date().toISOString()) // Changed from sessionStorage to localStorage
   } catch (error) {
     console.error("Error marking submission:", error)
   }
@@ -80,7 +81,7 @@ export function markSubmittedInSession(): void {
 // Clear submission status
 export function clearSubmissionStatus(): void {
   try {
-    sessionStorage.removeItem(SUBMISSION_TIMESTAMP_KEY)
+    localStorage.removeItem(SUBMISSION_TIMESTAMP_KEY) // Changed from sessionStorage to localStorage
   } catch (error) {
     console.error("Error clearing submission status:", error)
   }
@@ -170,7 +171,7 @@ export function removeFromSession(key: string): boolean {
   }
 }
 
-// Save progress to both localStorage and sessionStorage
+// Save progress to both localStorage and Supabase
 export function saveProgress(currentIndex: number, rankings: any, modelSequences: any, completedQuestions: any): void {
   try {
     // Ensure completedQuestions is an array
@@ -184,13 +185,7 @@ export function saveProgress(currentIndex: number, rankings: any, modelSequences
     saveToStorage(MODEL_SEQUENCES_KEY, modelSequences)
     saveToStorage(COMPLETED_QUESTIONS_KEY, completedQuestionsArray)
 
-    // Save to sessionStorage for current session
-    saveToSession(CURRENT_IMAGE_INDEX_KEY, currentIndex)
-    saveToSession(RANKINGS_KEY, rankings)
-    saveToSession(MODEL_SEQUENCES_KEY, modelSequences)
-    saveToSession(COMPLETED_QUESTIONS_KEY, completedQuestionsArray)
-
-    console.log("Progress saved:", {
+    console.log("Progress saved to localStorage:", {
       currentIndex,
       rankingsCount: Object.keys(rankings).length,
       modelSequencesCount: Object.keys(modelSequences).length,
@@ -201,44 +196,32 @@ export function saveProgress(currentIndex: number, rankings: any, modelSequences
   }
 }
 
-// Get saved progress from localStorage or sessionStorage
+// Get saved progress from localStorage
 export function getSavedProgress(): {
   currentIndex: number
   rankings: any
   modelSequences: any
   completedQuestions: any
+  testSequence: any
 } | null {
   try {
-    // Try to get from sessionStorage first
-    let currentIndex = getFromSession(CURRENT_IMAGE_INDEX_KEY, -1)
-    let rankings = getFromSession(RANKINGS_KEY, null)
-    let modelSequences = getFromSession(MODEL_SEQUENCES_KEY, null)
-    let completedQuestions = getFromSession(COMPLETED_QUESTIONS_KEY, null)
-
-    // If not found in sessionStorage, try localStorage
-    if (currentIndex === -1 || !rankings) {
-      currentIndex = getFromStorage(CURRENT_IMAGE_INDEX_KEY, -1)
-      rankings = getFromStorage(RANKINGS_KEY, null)
-      modelSequences = getFromStorage(MODEL_SEQUENCES_KEY, null)
-      completedQuestions = getFromStorage(COMPLETED_QUESTIONS_KEY, null)
-    }
+    // Get from localStorage
+    const currentIndex = getFromStorage(CURRENT_IMAGE_INDEX_KEY, -1)
+    const rankings = getFromStorage(RANKINGS_KEY, null)
+    const modelSequences = getFromStorage(MODEL_SEQUENCES_KEY, null)
+    const completedQuestions = getFromStorage(COMPLETED_QUESTIONS_KEY, null)
+    const testSequence = getFromStorage(TEST_SEQUENCE_KEY, null)
 
     if (currentIndex !== -1 && rankings) {
       // Ensure completedQuestions is an array
       const completedQuestionsArray = completedQuestions || []
-
-      // Validate that completedQuestions matches the rankings
-      // If there's a mismatch, rebuild completedQuestions based on rankings
-      if (!completedQuestionsArray.length && rankings && Object.keys(rankings).length > 0) {
-        console.log("Rebuilding completedQuestions from rankings")
-        // This is a fallback if completedQuestions is missing or empty
-      }
 
       return {
         currentIndex,
         rankings,
         modelSequences: modelSequences || {},
         completedQuestions: completedQuestionsArray,
+        testSequence,
       }
     }
 
@@ -249,7 +232,16 @@ export function getSavedProgress(): {
   }
 }
 
-// Clear saved progress from both localStorage and sessionStorage
+// Save test sequence to localStorage
+export function saveTestSequence(sequence: number[]): void {
+  try {
+    saveToStorage(TEST_SEQUENCE_KEY, sequence)
+  } catch (error) {
+    console.error("Error saving test sequence:", error)
+  }
+}
+
+// Clear saved progress from localStorage
 export function clearSavedProgress(): void {
   try {
     // Clear from localStorage
@@ -257,12 +249,7 @@ export function clearSavedProgress(): void {
     removeFromStorage(RANKINGS_KEY)
     removeFromStorage(MODEL_SEQUENCES_KEY)
     removeFromStorage(COMPLETED_QUESTIONS_KEY)
-
-    // Clear from sessionStorage
-    removeFromSession(CURRENT_IMAGE_INDEX_KEY)
-    removeFromSession(RANKINGS_KEY)
-    removeFromSession(MODEL_SEQUENCES_KEY)
-    removeFromSession(COMPLETED_QUESTIONS_KEY)
+    // Don't clear the test sequence
   } catch (error) {
     console.error("Error clearing saved progress:", error)
   }
@@ -298,4 +285,5 @@ export {
   CURRENT_IMAGE_INDEX_KEY,
   SESSION_ID_KEY,
   SUBMISSION_TIMESTAMP_KEY,
+  TEST_SEQUENCE_KEY,
 }

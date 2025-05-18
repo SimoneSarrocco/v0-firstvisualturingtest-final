@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 import {
   saveToStorage,
   generateClinicianId,
@@ -17,6 +19,7 @@ import {
   CLINICIAN_CREATED_AT_KEY,
 } from "@/lib/storage-utils"
 import { createClient } from "@/lib/supabase-client"
+import { getOrCreateSession } from "@/lib/session-manager"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,10 +28,12 @@ export default function LoginPage() {
   const [experience, setExperience] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [connectionError, setConnectionError] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError("")
+    setConnectionError(false)
 
     // Validate experience (required)
     if (!experience) {
@@ -53,18 +58,43 @@ export default function LoginPage() {
       // Try to save to Supabase if available
       try {
         const supabase = createClient()
-        await supabase.from("clinicians").insert([
-          {
-            id: clinicianId,
-            name: name || "Anonymous",
-            institution: institution || "Not specified",
-            experience,
-            created_at: timestamp,
-          },
-        ])
+
+        // First check if the clinician already exists
+        const { data: existingClinician, error: checkError } = await supabase
+          .from("clinicians")
+          .select("*")
+          .eq("id", clinicianId)
+          .single()
+
+        if (checkError && checkError.code !== "PGRST116") {
+          // PGRST116 is "no rows returned"
+          console.warn("Error checking for existing clinician:", checkError)
+        }
+
+        // Only insert if the clinician doesn't exist
+        if (!existingClinician) {
+          const { error: insertError } = await supabase.from("clinicians").insert([
+            {
+              id: clinicianId,
+              name: name || "Anonymous",
+              institution: institution || "Not specified",
+              experience,
+              created_at: timestamp,
+            },
+          ])
+
+          if (insertError) {
+            console.warn("Error inserting clinician:", insertError)
+            throw insertError
+          }
+        }
+
+        // Create a new session
+        await getOrCreateSession(clinicianId)
       } catch (err) {
-        // If Supabase is not available, just continue
+        // If Supabase is not available, just continue but show a warning
         console.warn("Could not save to Supabase:", err)
+        setConnectionError(true)
       }
 
       // Redirect to instructions page
@@ -121,6 +151,16 @@ export default function LoginPage() {
                 </div>
               </RadioGroup>
             </div>
+
+            {connectionError && (
+              <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Warning: Could not connect to the database. Your information will be saved locally, and you can still
+                  proceed with the evaluation.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {error && <p className="text-sm text-red-500">{error}</p>}
           </CardContent>

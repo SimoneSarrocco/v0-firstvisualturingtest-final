@@ -16,8 +16,8 @@ import { Progress } from "@/components/ui/progress"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { ImageComparisonRanking } from "@/components/image-comparison-ranking"
-import { createClient } from "@/lib/supabase-client"
-import { Download, AlertCircle, Mail, Lock, CheckCircle } from "lucide-react"
+import { createClient, testSupabaseConnection } from "@/lib/supabase-client"
+import { Download, AlertCircle, Mail, Lock, CheckCircle, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { formatRankingsForExport, createCSV, downloadCSV } from "@/lib/export-utils"
 import {
@@ -25,13 +25,23 @@ import {
   getFromStorage,
   removeFromStorage,
   getOrCreateDeviceId,
+  getOrCreateSessionId,
   saveProgress,
   getSavedProgress,
   clearSavedProgress,
   hasSubmittedInSession,
   markSubmittedInSession,
   CLINICIAN_ID_KEY,
+  saveTestSequence,
 } from "@/lib/storage-utils"
+import {
+  getOrCreateSession,
+  saveProgressToSupabase,
+  getProgressFromSupabase,
+  saveRankingToSupabase,
+  completeSession,
+  getSessionRankings,
+} from "@/lib/session-manager"
 
 // Define model types - but don't show their names to users
 const models = ["DDPM", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
@@ -84,21 +94,23 @@ export default function TestPage() {
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [showResumeDialog, setShowResumeDialog] = useState(false)
   const [clinicianId, setClinicianId] = useState("")
+  const [sessionId, setSessionId] = useState("")
   const [clinicianData, setClinicianData] = useState({})
   const [completedQuestions, setCompletedQuestions] = useState(new Set())
   const [supabaseError, setSupabaseError] = useState(null)
   const [isMounted, setIsMounted] = useState(false)
   const [showSavedIndicator, setShowSavedIndicator] = useState(false)
+  const [savingToSupabase, setSavingToSupabase] = useState(false)
+  const [retryingConnection, setRetryingConnection] = useState(false)
   const savedIndicatorTimeoutRef = useRef(null)
+  const saveToSupabaseTimeoutRef = useRef(null)
 
   // Initialize test sequence on component mount
-  const initializeTest = useCallback(() => {
-    // Generate a fixed sequence for all users
-    const sequence = generateTestSequence()
-    setTestSequence(sequence)
-
+  const initializeTest = useCallback(async () => {
     // Only access localStorage on the client side
     if (typeof window !== "undefined") {
+      setLoading(true)
+
       // Ensure we have a device ID
       getOrCreateDeviceId()
 
@@ -124,32 +136,67 @@ export default function TestPage() {
           experience: getFromStorage("oct_clinician_experience", "unknown"),
           created_at: getFromStorage("oct_clinician_created_at", new Date().toISOString()),
         })
+
+        // Get or create a session
+        try {
+          const { sessionId: sid } = await getOrCreateSession(storedClinicianId)
+          setSessionId(sid)
+        } catch (error) {
+          console.error("Error getting or creating session:", error)
+          // Use the local session ID as fallback
+          setSessionId(getOrCreateSessionId())
+        }
       }
 
       // Check if we have any saved progress
       const savedProgress = getSavedProgress()
+
+      // Generate or retrieve the test sequence
+      let sequence
+      if (savedProgress && savedProgress.testSequence) {
+        // Use the saved test sequence
+        sequence = savedProgress.testSequence
+        console.log("Using saved test sequence:", sequence)
+      } else {
+        // Generate a new test sequence
+        sequence = generateTestSequence()
+        // Save the test sequence to localStorage
+        saveTestSequence(sequence)
+        console.log("Generated new test sequence:", sequence)
+      }
+
+      setTestSequence(sequence)
+
       if (savedProgress) {
         // Ask user if they want to resume
         setShowResumeDialog(true)
-
-        // If they choose to resume, this will be handled by the dialog
       } else {
         // No saved progress, start fresh
         clearSavedProgress()
       }
-    }
 
-    setLoading(false)
+      // Test Supabase connection
+      const { success, error } = await testSupabaseConnection()
+      if (!success) {
+        console.warn("Supabase connection test failed:", error)
+        setSupabaseError(error || "Could not connect to database")
+      }
+
+      setLoading(false)
+    }
   }, [router])
 
   useEffect(() => {
     setIsMounted(true)
     initializeTest()
 
-    // Clear any existing timeout on unmount
+    // Clear any existing timeouts on unmount
     return () => {
       if (savedIndicatorTimeoutRef.current) {
         clearTimeout(savedIndicatorTimeoutRef.current)
+      }
+      if (saveToSupabaseTimeoutRef.current) {
+        clearTimeout(saveToSupabaseTimeoutRef.current)
       }
     }
   }, [initializeTest])
@@ -157,8 +204,65 @@ export default function TestPage() {
   const currentImage = testSequence[currentImageIndex]
   const progress = testSequence.length > 0 ? (completedQuestions.size / testSequence.length) * 100 : 0
 
+  // Retry Supabase connection
+  const retrySupabaseConnection = async () => {
+    setRetryingConnection(true)
+    try {
+      const { success, error } = await testSupabaseConnection()
+      if (success) {
+        setSupabaseError(null)
+        toast({
+          title: "Connection restored",
+          description: "Successfully connected to the database.",
+          variant: "success",
+        })
+      } else {
+        setSupabaseError(error || "Could not connect to database")
+        toast({
+          title: "Connection failed",
+          description: "Could not connect to the database. Your answers will be saved locally.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error retrying Supabase connection:", error)
+      setSupabaseError("Could not connect to database")
+    } finally {
+      setRetryingConnection(false)
+    }
+  }
+
+  // Save current progress to Supabase
+  const saveCurrentProgressToSupabase = async () => {
+    if (!sessionId || supabaseError) return
+
+    setSavingToSupabase(true)
+    try {
+      // Save progress
+      await saveProgressToSupabase(sessionId, currentImageIndex, Array.from(completedQuestions))
+
+      // Save all rankings
+      for (const [imageId, modelOrder] of Object.entries(rankings)) {
+        await saveRankingToSupabase(
+          sessionId,
+          clinicianId,
+          Number(imageId),
+          modelOrder,
+          modelSequences[imageId] || modelOrder,
+        )
+      }
+
+      console.log("Progress saved to Supabase")
+    } catch (error) {
+      console.error("Error saving progress to Supabase:", error)
+      setSupabaseError(error.message || "Could not save to database")
+    } finally {
+      setSavingToSupabase(false)
+    }
+  }
+
   // Handle resume from saved progress
-  const handleResume = () => {
+  const handleResume = async () => {
     const savedProgress = getSavedProgress()
     if (savedProgress) {
       console.log("Resuming from saved progress:", savedProgress)
@@ -195,6 +299,60 @@ export default function TestPage() {
         completedQuestionsCount: validCompletedQuestions.size,
       })
 
+      // Try to get progress from Supabase if available
+      if (sessionId && !supabaseError) {
+        try {
+          const { success, progress } = await getProgressFromSupabase(sessionId)
+          if (success && progress) {
+            console.log("Retrieved progress from Supabase:", progress)
+
+            // Update current index from Supabase
+            setCurrentImageIndex(progress.current_index)
+
+            // Get rankings from Supabase
+            const { success: rankingsSuccess, rankings: supabaseRankings } = await getSessionRankings(sessionId)
+            if (rankingsSuccess && supabaseRankings.length > 0) {
+              console.log("Retrieved rankings from Supabase:", supabaseRankings)
+
+              // Convert Supabase rankings to the format we use locally
+              const supabaseRankingsMap = {}
+              const supabaseModelSequencesMap = {}
+              const supabaseCompletedQuestions = new Set()
+
+              supabaseRankings.forEach((ranking) => {
+                supabaseRankingsMap[ranking.image_id] = ranking.model_rankings
+                supabaseModelSequencesMap[ranking.image_id] = ranking.model_sequence
+
+                // Find the index of this image in the test sequence
+                const questionIndex = testSequence.findIndex((img) => img === ranking.image_id)
+                if (questionIndex !== -1) {
+                  supabaseCompletedQuestions.add(questionIndex)
+                }
+              })
+
+              // Merge with local data, preferring Supabase data
+              setRankings({ ...validRankings, ...supabaseRankingsMap })
+              setModelSequences({ ...validModelSequences, ...supabaseModelSequencesMap })
+              setCompletedQuestions(new Set([...validCompletedQuestions, ...supabaseCompletedQuestions]))
+
+              // Save the merged data to localStorage
+              saveProgress(
+                progress.current_index,
+                { ...validRankings, ...supabaseRankingsMap },
+                { ...validModelSequences, ...supabaseModelSequencesMap },
+                Array.from(new Set([...validCompletedQuestions, ...supabaseCompletedQuestions])),
+              )
+
+              setShowResumeDialog(false)
+              return
+            }
+          }
+        } catch (error) {
+          console.error("Error getting progress from Supabase:", error)
+        }
+      }
+
+      // Fall back to local data if Supabase retrieval fails
       setCurrentImageIndex(savedProgress.currentIndex)
       setRankings(validRankings)
       setModelSequences(validModelSequences)
@@ -214,6 +372,14 @@ export default function TestPage() {
     setCurrentImageIndex(index)
     // Save current image index
     saveProgress(index, rankings, modelSequences, Array.from(completedQuestions))
+
+    // Schedule save to Supabase
+    if (saveToSupabaseTimeoutRef.current) {
+      clearTimeout(saveToSupabaseTimeoutRef.current)
+    }
+    saveToSupabaseTimeoutRef.current = setTimeout(() => {
+      saveCurrentProgressToSupabase()
+    }, 1000)
   }
 
   // Handle ranking submission for current image
@@ -239,10 +405,18 @@ export default function TestPage() {
     newCompleted.add(currentImageIndex)
     setCompletedQuestions(newCompleted)
 
-    // Save progress
+    // Save progress locally
     saveProgress(currentImageIndex, newRankings, newModelSequences, Array.from(newCompleted))
 
-    // Show saved indicator instead of toast
+    // Schedule save to Supabase
+    if (saveToSupabaseTimeoutRef.current) {
+      clearTimeout(saveToSupabaseTimeoutRef.current)
+    }
+    saveToSupabaseTimeoutRef.current = setTimeout(() => {
+      saveCurrentProgressToSupabase()
+    }, 1000)
+
+    // Show saved indicator
     setShowSavedIndicator(true)
 
     // Clear any existing timeout
@@ -300,60 +474,59 @@ export default function TestPage() {
     setSubmitting(true)
     try {
       // First, check if we can connect to Supabase
-      const supabase = createClient()
+      const { success: connectionSuccess, error: connectionError } = await testSupabaseConnection()
 
-      // Test the connection with a simple query
-      const { data: testData, error: testError } = await supabase
-        .from("rankings")
-        .select("count(*)", { count: "exact", head: true })
-
-      if (testError) {
-        console.error("Connection test failed:", testError)
-        throw new Error(`Connection test failed: ${testError.message}`)
+      if (!connectionSuccess) {
+        console.error("Connection test failed:", connectionError)
+        throw new Error(`Connection test failed: ${connectionError}`)
       }
 
       console.log("Connection test successful, proceeding with data submission")
 
+      const supabase = createClient()
+
       // First, try to save clinician data if it hasn't been saved yet
       try {
-        const { error: clinicianError } = await supabase.from("clinicians").insert([
-          {
-            id: clinicianData.id,
-            name: clinicianData.name,
-            institution: clinicianData.institution,
-            experience: clinicianData.experience,
-            created_at: clinicianData.created_at,
-          },
-        ])
+        const { error: clinicianError } = await supabase.from("clinicians").upsert(
+          [
+            {
+              id: clinicianData.id,
+              name: clinicianData.name,
+              institution: clinicianData.institution,
+              experience: clinicianData.experience,
+              created_at: clinicianData.created_at,
+            },
+          ],
+          { onConflict: "id" },
+        )
 
-        // If there's an error but it's just because the record already exists, that's fine
-        if (clinicianError && !clinicianError.message.includes("duplicate key")) {
+        if (clinicianError) {
           console.warn("Could not save clinician data:", clinicianError)
         }
       } catch (err) {
         console.warn("Error saving clinician data, continuing anyway:", err)
       }
 
-      // Format the data for submission
-      const formattedRankings = Object.entries(rankings).map(([imageId, modelOrder]) => ({
-        clinician_id: clinicianData.id,
-        image_id: Number.parseInt(imageId),
-        model_rankings: modelOrder,
-        model_sequence: modelSequences[Number.parseInt(imageId)] || modelOrder,
-        submitted_at: new Date().toISOString(),
-      }))
+      // Save all rankings to Supabase
+      for (const [imageId, modelOrder] of Object.entries(rankings)) {
+        console.log("Saving ranking for image:", imageId)
 
-      console.log("Submitting rankings:", formattedRankings.length)
+        const { success, error } = await saveRankingToSupabase(
+          sessionId,
+          clinicianData.id,
+          Number(imageId),
+          modelOrder,
+          modelSequences[imageId] || modelOrder,
+        )
 
-      // Insert data into Supabase one by one to avoid potential issues with batch inserts
-      for (const ranking of formattedRankings) {
-        console.log("Inserting ranking for image:", ranking.image_id)
-        const { error } = await supabase.from("rankings").insert([ranking])
-        if (error) {
-          console.error("Error inserting ranking:", error, ranking)
-          throw new Error(`Error inserting ranking: ${error.message}`)
+        if (!success) {
+          console.error("Error saving ranking:", error)
+          throw new Error(`Error saving ranking: ${error}`)
         }
       }
+
+      // Mark session as completed
+      await completeSession(sessionId)
 
       console.log("All rankings submitted successfully")
 
@@ -469,10 +642,23 @@ export default function TestPage() {
 
           {supabaseError && (
             <Alert variant="destructive" className="mb-1 py-1">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                There was an error connecting to the database. Your answers are being saved locally.
-              </AlertDescription>
+              <div className="flex justify-between items-center w-full">
+                <div className="flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <AlertDescription>
+                    There was an error connecting to the database. Your answers are being saved locally.
+                  </AlertDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={retrySupabaseConnection}
+                  disabled={retryingConnection}
+                  className="ml-2 min-w-[80px]"
+                >
+                  {retryingConnection ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Retry"}
+                </Button>
+              </div>
             </Alert>
           )}
 
@@ -519,6 +705,14 @@ export default function TestPage() {
             <div className="fixed bottom-4 right-4 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md shadow-md flex items-center">
               <CheckCircle className="h-4 w-4 mr-2" />
               Ranking saved
+            </div>
+          )}
+
+          {/* Saving to Supabase indicator */}
+          {savingToSupabase && (
+            <div className="fixed bottom-4 right-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-md shadow-md flex items-center">
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Saving to database...
             </div>
           )}
         </CardContent>

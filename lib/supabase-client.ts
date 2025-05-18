@@ -33,10 +33,33 @@ export const createClient = () => {
       db: {
         schema: "public",
       },
+      global: {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
     })
     return supabaseInstance
   } catch (error) {
     console.error("Error creating Supabase client:", error)
     throw new Error(`Failed to initialize Supabase client: ${error}`)
+  }
+}
+
+// Test the Supabase connection
+export const testSupabaseConnection = async () => {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.from("clinicians").select("count(*)", { count: "exact", head: true })
+
+    if (error) {
+      console.error("Supabase connection test failed:", error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error testing Supabase connection:", error)
+    return { success: false, error: error.message || "Unknown error" }
   }
 }
