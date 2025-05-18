@@ -278,7 +278,7 @@ export function DragDropRanking({ inputImage, models, onSubmit, initialRanking }
 
     // Create image labels (A, B, C, etc.) for each model
     const labels = {}
-    models.forEach((model, idx) => {
+    newModelOrder.forEach((model, idx) => {
       labels[model] = String.fromCharCode(65 + idx) // A, B, C, etc.
     })
     setImageLabels(labels)
@@ -419,7 +419,7 @@ export function DragDropRanking({ inputImage, models, onSubmit, initialRanking }
                       index={slotIndex}
                       position={slotIndex}
                       onViewFullSize={() => handleViewFullImage(model, slotIndex)}
-                      imageLabel={imageLabels[model] || String.fromCharCode(65 + models.indexOf(model))}
+                      imageLabel={imageLabels[model]}
                       onTapToSwap={() => handleTapToSwap(slotIndex)}
                       isSelected={selectedImageIndex === slotIndex}
                       onMouseMove={(e) => handleMouseMove(e, slotIndex)}

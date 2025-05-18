@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog"
@@ -26,7 +25,20 @@ export function ImageViewer({ src, alt, isOpen, onClose }: ImageViewerProps) {
   // Check if we're on client-side
   useEffect(() => {
     setIsMounted(true)
-  }, [])
+
+    // Add escape key handler
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+
+    if (isOpen) {
+      window.addEventListener("keydown", handleEscape)
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape)
+    }
+  }, [isOpen, onClose])
 
   // Reset zoom and position when image changes or dialog opens
   useEffect(() => {
@@ -85,10 +97,13 @@ export function ImageViewer({ src, alt, isOpen, onClose }: ImageViewerProps) {
     return cleanedAlt
   }
 
-  // Don't render anything during SSR
-  if (!isMounted) {
-    return null
+  // Handle click on the overlay to close
+  const handleOverlayClick = () => {
+    onClose()
   }
+
+  // Don't render anything during SSR or if dialog is not open
+  if (!isMounted || !isOpen) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -142,6 +157,7 @@ export function ImageViewer({ src, alt, isOpen, onClose }: ImageViewerProps) {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onClick={handleOverlayClick}
         >
           {/* Close overlay - only visible when scale is 1 */}
           {scale === 1 && (

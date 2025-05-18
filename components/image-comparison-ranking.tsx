@@ -77,15 +77,18 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
   const [draggedModel, setDraggedModel] = useState<string | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [fullSizeImage, setFullSizeImage] = useState<{ src: string; alt: string } | null>(null)
-  const [imageLabels, setImageLabels] = useState<Record<string, string>>({})
   const [isMounted, setIsMounted] = useState(false)
+  // Store the initial order to keep track of original letters
+  const [initialOrder, setInitialOrder] = useState<string[]>([])
+  // Map to store the letter for each model
+  const [modelLetters, setModelLetters] = useState<Record<string, string>>({})
 
   // Check if we're on client-side
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  // Initialize model ranking
+  // Initialize model ranking and letters
   useEffect(() => {
     let newRanking = []
 
@@ -98,18 +101,19 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
     }
 
     setModelRanking(newRanking)
+    setInitialOrder([...newRanking])
+
+    // Assign letters A-E to models based on initial position
+    const letters: Record<string, string> = {}
+    newRanking.forEach((model, index) => {
+      letters[model] = String.fromCharCode(65 + index) // A, B, C, etc.
+    })
+    setModelLetters(letters)
 
     // Set the first model as selected by default
     if (newRanking.length > 0) {
       setSelectedModel(newRanking[0])
     }
-
-    // Create image labels (A, B, C, etc.) for each model
-    const labels: Record<string, string> = {}
-    models.forEach((model, idx) => {
-      labels[model] = String.fromCharCode(65 + idx) // A, B, C, etc.
-    })
-    setImageLabels(labels)
   }, [inputImage, models, initialRanking])
 
   // Get the correct image filename based on model and image number
@@ -184,7 +188,7 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
     if (e) e.stopPropagation()
     setFullSizeImage({
       src: getImageSrc(model),
-      alt: model ? `Enhanced Image ${imageLabels[model]}` : "Low-quality OCT image",
+      alt: model ? `Enhanced Image ${modelLetters[model]}` : "Low-quality OCT image",
     })
   }
 
@@ -206,17 +210,20 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
         <div className="w-full md:w-1/2 space-y-1">
           <h3 className="font-medium">Low-quality OCT Image:</h3>
           <div
-            className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer"
+            className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
             onClick={() => handleViewFullImage(null)}
+            style={{ height: "496px" }}
           >
-            <Image
-              src={getImageSrc(null) || "/placeholder.svg"}
-              alt="Low-quality OCT image"
-              width={384}
-              height={248}
-              className="w-full h-auto"
-              unoptimized
-            />
+            <div className="w-full h-full flex items-center justify-center">
+              <Image
+                src={getImageSrc(null) || "/placeholder.svg"}
+                alt="Low-quality OCT image"
+                width={768}
+                height={496}
+                className="max-h-full w-auto"
+                unoptimized
+              />
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -236,24 +243,27 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
         >
           <h3 className="font-medium">
             {selectedModel
-              ? `Selected Enhanced Image (${imageLabels[selectedModel]}):`
+              ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
               : "Drag an image here to compare:"}
           </h3>
           {selectedModel ? (
             <div
-              className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer"
+              className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
               onClick={() => handleViewFullImage(selectedModel)}
+              style={{ height: "496px" }}
             >
-              <Image
-                src={getImageSrc(selectedModel) || "/placeholder.svg"}
-                alt={`Enhanced Image ${imageLabels[selectedModel]}`}
-                width={384}
-                height={248}
-                className="w-full h-auto"
-                unoptimized
-              />
+              <div className="w-full h-full flex items-center justify-center">
+                <Image
+                  src={getImageSrc(selectedModel) || "/placeholder.svg"}
+                  alt={`Enhanced Image ${modelLetters[selectedModel]}`}
+                  width={768}
+                  height={496}
+                  className="max-h-full w-auto"
+                  unoptimized
+                />
+              </div>
               <div className="absolute top-1 left-1 bg-white/80 px-1 py-0.5 text-xs font-medium rounded">
-                {imageLabels[selectedModel]}
+                {modelLetters[selectedModel]}
               </div>
               <Button
                 variant="ghost"
@@ -265,7 +275,7 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
               </Button>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-[248px] bg-gray-50 rounded-md">
+            <div className="flex items-center justify-center h-[496px] bg-gray-50 rounded-md">
               <p className="text-gray-500">Drag an image here to compare</p>
             </div>
           )}
@@ -280,7 +290,6 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
         </p>
         <div className="flex flex-wrap gap-2 justify-center">
           {modelRanking.map((model, index) => {
-            const label = imageLabels[model] || String.fromCharCode(65 + models.indexOf(model))
             const borderColorClass = getBorderColorClass(index)
             const bgColorClass = getBgColorClass(index)
             const textColorClass = getTextColorClass(index)
@@ -313,16 +322,17 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
                   )}
                   onClick={() => handleModelClick(model)}
                 >
-                  <Image
-                    src={getImageSrc(model) || "/placeholder.svg"}
-                    alt={`Enhanced Image ${label}`}
-                    width={200}
-                    height={129}
-                    className="w-full h-auto"
-                    unoptimized
-                  />
+                  <div className="aspect-[1.55] relative">
+                    <Image
+                      src={getImageSrc(model) || "/placeholder.svg"}
+                      alt={`Enhanced Image ${modelLetters[model]}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
                   <div className="absolute top-1 left-1 bg-white/80 px-1 py-0.5 text-xs font-medium rounded">
-                    {label}
+                    {modelLetters[model]}
                   </div>
                 </div>
               </div>
@@ -338,16 +348,22 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
 
       {/* Full-size image dialog */}
       <Dialog open={!!fullSizeImage} onOpenChange={() => setFullSizeImage(null)}>
-        <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 overflow-hidden flex items-center justify-center bg-transparent border-0 shadow-none">
+        <DialogContent
+          className="max-w-[90vw] max-h-[90vh] p-0 overflow-hidden flex items-center justify-center bg-black border-0 shadow-none"
+          onClick={() => setFullSizeImage(null)}
+        >
           {fullSizeImage && (
-            <Image
-              src={fullSizeImage.src || "/placeholder.svg"}
-              alt={fullSizeImage.alt}
-              width={768}
-              height={496}
-              className="max-w-full max-h-[90vh] object-contain"
-              unoptimized
-            />
+            <div className="relative flex items-center justify-center">
+              <Image
+                src={fullSizeImage.src || "/placeholder.svg"}
+                alt={fullSizeImage.alt}
+                width={768}
+                height={496}
+                className="max-h-[90vh] w-auto"
+                onClick={(e) => e.stopPropagation()}
+                unoptimized
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>
