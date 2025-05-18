@@ -1,11 +1,12 @@
 "use client"
 
+import { cn } from "@/lib/utils"
+
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { ImageComparisonRanking } from "@/components/image-comparison-ranking"
@@ -415,8 +416,10 @@ export default function TestPage() {
     return (
       <div className="w-full px-4 py-10 flex items-center justify-center h-[80vh]">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Loading test...</h2>
-          <Progress value={0} className="w-[300px]" />
+          <h2 className="text-xl font-bold mb-4 gradient-text">Loading test...</h2>
+          <div className="w-[300px] h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="progress-bar h-full w-0"></div>
+          </div>
         </div>
       </div>
     )
@@ -424,24 +427,26 @@ export default function TestPage() {
 
   return (
     <div className="w-full px-0 py-1 mx-auto">
-      <Card className="mb-2 w-full max-w-none rounded-none">
-        <CardHeader className="pb-1 pt-2 px-4">
+      <Card className="modern-card mb-2 w-full max-w-none rounded-none">
+        <CardHeader className="pb-1 pt-2 px-4 modern-header">
           <CardTitle className="flex items-center justify-between text-lg">
-            <span>
+            <span className="gradient-text">
               Question {currentImageIndex + 1} of {testSequence.length}
             </span>
-            <span className="text-sm font-normal text-muted-foreground">Progress: {Math.round(progress)}%</span>
+            <span className="text-sm font-normal text-gray-500">Progress: {Math.round(progress)}%</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 space-y-2 px-4">
-          <Progress value={progress} className="mb-1" />
+        <CardContent className="pt-2 space-y-2 px-4">
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+            <div className="progress-bar h-full" style={{ width: `${progress}%` }}></div>
+          </div>
 
           {supabaseError && (
-            <Alert variant="destructive" className="mb-1 py-1">
+            <Alert variant="destructive" className="mb-1 py-1 bg-red-50 border-red-200">
               <div className="flex justify-between items-center w-full">
                 <div className="flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  <AlertDescription>
+                  <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
+                  <AlertDescription className="text-red-700">
                     {supabaseError.includes("environment variables")
                       ? "Database connection not configured. Your answers will be saved locally."
                       : "There was an error connecting to the database. Your answers will be saved locally."}
@@ -453,7 +458,7 @@ export default function TestPage() {
                     size="sm"
                     onClick={retrySupabaseConnection}
                     disabled={retryingConnection}
-                    className="ml-2 min-w-[80px]"
+                    className="ml-2 min-w-[80px] border-red-200 text-red-700 hover:bg-red-50"
                   >
                     {retryingConnection ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Retry"}
                   </Button>
@@ -465,8 +470,8 @@ export default function TestPage() {
           {hasSubmittedInSession() && (
             <Alert variant="warning" className="mb-1 py-1 bg-amber-50 border-amber-200">
               <div className="flex items-center">
-                <Lock className="h-4 w-4 mr-2 flex-shrink-0" />
-                <AlertDescription className="text-sm">
+                <Lock className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
+                <AlertDescription className="text-sm text-amber-700">
                   You have already submitted your results. You can review your answers, but cannot submit again.
                 </AlertDescription>
               </div>
@@ -474,15 +479,16 @@ export default function TestPage() {
           )}
 
           {/* Question navigation */}
-          <div className="mb-1 flex flex-wrap gap-1">
+          <div className="mb-2 flex flex-wrap gap-1">
             {testSequence.map((_, index) => (
               <Button
                 key={index}
-                variant={
-                  index === currentImageIndex ? "default" : completedQuestions.has(index) ? "outline" : "secondary"
-                }
+                variant={index === currentImageIndex ? "default" : "outline"}
                 size="sm"
-                className={completedQuestions.has(index) ? "border-green-500" : ""}
+                className={cn(
+                  index === currentImageIndex ? "question-button-active" : "question-button",
+                  completedQuestions.has(index) ? "question-button-completed" : "",
+                )}
                 onClick={() => navigateToQuestion(index)}
               >
                 {index + 1}
@@ -503,7 +509,7 @@ export default function TestPage() {
 
           {/* Saved indicator */}
           {showSavedIndicator && (
-            <div className="fixed bottom-4 right-4 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md shadow-md flex items-center">
+            <div className="fixed bottom-4 right-4 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md shadow-lg flex items-center">
               <CheckCircle className="h-4 w-4 mr-2" />
               Ranking saved
             </div>
@@ -513,18 +519,26 @@ export default function TestPage() {
 
       {/* Completion Dialog */}
       <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
-        <DialogContent className="p-4 w-[400px] max-w-[95vw]">
+        <DialogContent className="modern-dialog p-6 w-[400px] max-w-[95vw]">
           <div className="text-center mb-4">
-            <h2 className="text-xl font-semibold mb-2">Complete Evaluation</h2>
+            <h2 className="text-xl font-bold mb-2 gradient-text">Complete Evaluation</h2>
             <p className="text-sm text-gray-600">
               You have ranked all the images. Would you like to submit your evaluation now?
             </p>
           </div>
-          <div className="flex justify-end space-x-2 mt-2">
-            <Button variant="outline" onClick={() => setShowCompletionDialog(false)}>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowCompletionDialog(false)}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
               Review Answers
             </Button>
-            <Button onClick={submitAllRankings} disabled={submitting || hasSubmittedInSession()}>
+            <Button
+              onClick={submitAllRankings}
+              disabled={submitting || hasSubmittedInSession()}
+              className="button-gradient"
+            >
               {submitting ? "Submitting..." : "Submit Evaluation"}
             </Button>
           </div>
@@ -533,22 +547,22 @@ export default function TestPage() {
 
       {/* Export Dialog */}
       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent className="p-4 w-[450px] max-w-[95vw]">
+        <DialogContent className="modern-dialog p-6 w-[450px] max-w-[95vw]">
           <div className="mb-4">
-            <h2 className="text-xl font-semibold mb-2">Database Connection Error</h2>
+            <h2 className="text-xl font-bold mb-2 gradient-text">Database Connection Error</h2>
             <p className="text-sm text-gray-600 mb-4">
               {supabaseError && supabaseError.includes("environment variables")
                 ? "The database connection is not configured. You can export your results as a CSV file."
                 : "We couldn't connect to our database to save your results. This could be due to network issues or because the app hasn't been deployed yet."}
             </p>
-            <Alert variant="destructive" className="mb-4 py-2">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <AlertDescription className="text-xs">Error: {supabaseError}</AlertDescription>
+            <Alert variant="destructive" className="mb-4 py-2 bg-red-50 border-red-200">
+              <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
+              <AlertDescription className="text-xs text-red-700">Error: {supabaseError}</AlertDescription>
             </Alert>
-            <p className="text-sm mb-2">
+            <p className="text-sm mb-2 text-gray-600">
               You can export your results as a CSV file, which you can then send to the researchers or upload later.
             </p>
-            <p className="text-sm font-medium mb-2">
+            <p className="text-sm font-medium mb-2 text-gray-700">
               Please send the downloaded CSV file to one of these email addresses:
             </p>
             <div className="flex flex-col gap-1 mb-4">
@@ -567,10 +581,14 @@ export default function TestPage() {
             </div>
           </div>
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowExportDialog(false)}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
               Go Back
             </Button>
-            <Button onClick={exportDataAsCSV}>
+            <Button onClick={exportDataAsCSV} className="button-gradient">
               <Download className="mr-2 h-4 w-4" />
               Export Results as CSV
             </Button>

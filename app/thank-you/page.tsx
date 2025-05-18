@@ -239,9 +239,9 @@ export default function ThankYouPage() {
   const getMedalIcon = (position: number) => {
     switch (position) {
       case 0:
-        return <Trophy className="h-5 w-5 text-yellow-500" />
+        return <Trophy className="h-5 w-5 text-yellow-600" />
       case 1:
-        return <Medal className="h-5 w-5 text-gray-400" />
+        return <Medal className="h-5 w-5 text-gray-500" />
       case 2:
         return <Medal className="h-5 w-5 text-amber-700" />
       default:
@@ -274,32 +274,34 @@ export default function ThankYouPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] py-10 px-4">
-      <div style={{ maxWidth: "500px", width: "100%" }}>
-        <Card className="w-full card-gradient">
+      <div className="w-full max-w-md">
+        <Card className="modern-card card-hover">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <CheckCircle className="h-16 w-16 text-green-500" />
+              <CheckCircle className="h-16 w-16 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Thank You!</CardTitle>
+            <CardTitle className="text-2xl">
+              <span className="gradient-text">Thank You!</span>
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p>
+            <p className="text-gray-700">
               Your evaluation has been successfully submitted. We greatly appreciate your participation in this clinical
               study.
             </p>
-            <p className="mt-4">
+            <p className="mt-4 text-gray-700">
               Your expert feedback will help us improve deep learning models for OCT image enhancement.
             </p>
 
             {/* Results Summary - Always show if we have rankings */}
             {isLoading ? (
               <div className="mt-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <p className="text-sm text-muted-foreground">Loading your results...</p>
+                <p className="text-sm text-gray-500">Loading your results...</p>
               </div>
             ) : modelRankings.length > 0 ? (
               <div className="mt-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h3 className="text-lg font-medium mb-2">Your Evaluation Results</h3>
-                <p className="text-sm text-muted-foreground mb-4">
+                <h3 className="text-lg font-medium mb-2 text-blue-600">Your Evaluation Results</h3>
+                <p className="text-sm text-gray-500 mb-4">
                   Based on your rankings, here's how you rated the different deep learning models:
                 </p>
 
@@ -311,9 +313,9 @@ export default function ThankYouPage() {
                         {index < 3 && <div className="rounded-full bg-white p-1 shadow-md">{getMedalIcon(index)}</div>}
                       </div>
 
-                      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div className="p-3 flex justify-between items-center border-b border-gray-100">
-                          <div className="font-medium flex items-center">
+                          <div className="font-medium flex items-center text-gray-700">
                             <span className="mr-2">{index + 1}.</span>
                             {/* Show only the full model name */}
                             <span>{MODEL_FULL_NAMES[model.model]}</span>
@@ -325,7 +327,7 @@ export default function ThankYouPage() {
 
                         <div className="p-3">
                           <div className="flex items-center">
-                            <div className="text-sm font-medium mr-3 w-16">Rank:</div>
+                            <div className="text-sm font-medium mr-3 w-16 text-gray-600">Rank:</div>
                             <div className="flex-1 bg-gray-200 h-6 rounded-full overflow-hidden">
                               {/* Rank bar - width is percentage of max rank (5) */}
                               <div
@@ -347,14 +349,14 @@ export default function ThankYouPage() {
                   ))}
                 </div>
 
-                <div className="text-sm text-muted-foreground mt-4 text-center">
+                <div className="text-sm text-gray-600 mt-4 text-center">
                   <p>Based on your evaluations</p>
                   <p className="mt-1 font-medium">Lower rank numbers indicate better performance</p>
                 </div>
               </div>
             ) : (
               <div className="mt-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-500">
                   We couldn't retrieve your evaluation results. This might be due to a technical issue.
                 </p>
               </div>
@@ -362,12 +364,12 @@ export default function ThankYouPage() {
 
             {/* Only show the warning and download option if Supabase save failed */}
             {hasLocalData && saveToSupabaseFailed && (
-              <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-900">
-                <p className="text-yellow-800 dark:text-yellow-300">
+              <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-yellow-700">
                   It seems your data might not have been saved to our database. You can download your results as a CSV
                   file to ensure your valuable feedback is preserved.
                 </p>
-                <p className="text-yellow-800 dark:text-yellow-300 mt-2">Please send the downloaded CSV file to:</p>
+                <p className="text-yellow-700 mt-2">Please send the downloaded CSV file to:</p>
                 <div className="flex flex-col gap-1 mt-2">
                   <a
                     href="mailto:simone.sarrocco@unibas.ch"
@@ -375,7 +377,7 @@ export default function ThankYouPage() {
                   >
                     <Mail className="h-4 w-4 mr-1" /> simone.sarrocco@unibas.ch
                   </a>
-                  <span className="text-yellow-800 dark:text-yellow-300">or</span>
+                  <span className="text-yellow-700">or</span>
                   <a
                     href="mailto:philippe.valmaggia@unibas.ch"
                     className="text-blue-600 hover:underline flex items-center justify-center"
@@ -385,17 +387,19 @@ export default function ThankYouPage() {
                 </div>
               </div>
             )}
-          </CardContent>
-          <CardFooter className="justify-center flex-col gap-2">
-            {/* Only show download button if Supabase save failed */}
-            {hasLocalData && saveToSupabaseFailed && (
-              <Button onClick={handleDownloadData} className="w-full mb-2">
-                <Download className="mr-2 h-4 w-4" />
-                Download Your Results
-              </Button>
+
+            {/* Download Button */}
+            {!isLoading && modelRankings.length > 0 && (
+              <div className="mt-6">
+                <Button onClick={handleDownloadData} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Download className="h-4 w-4 mr-2" /> Download Results
+                </Button>
+              </div>
             )}
-            <Link href="/">
-              <Button variant="outline" className="w-full">
+          </CardContent>
+          <CardFooter className="justify-center">
+            <Link href="/" className="w-full">
+              <Button variant="outline" className="w-full border-gray-300 text-gray-700">
                 Return to Home
               </Button>
             </Link>

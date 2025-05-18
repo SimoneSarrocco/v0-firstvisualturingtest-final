@@ -54,14 +54,16 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="w-full px-0 py-2">
-      <Card className="mb-4 w-full max-w-none mx-0">
-        <CardHeader className="pb-1 px-6">
-          <CardTitle>Practice Question</CardTitle>
+    <div className="w-full px-4 py-6">
+      <Card className="modern-card mb-4 w-full max-w-none">
+        <CardHeader className="pb-1 px-6 modern-header">
+          <CardTitle className="text-xl font-bold">
+            <span className="gradient-text">Practice Question</span>
+          </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 px-6">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
+        <CardContent className="pt-4 px-6">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">
               Click or drag an AI-enhanced image to compare it with the low-quality original. Rank the enhanced images
               from best (leftmost) to worst (rightmost) by dragging them into order.
             </p>
@@ -78,18 +80,26 @@ export default function PracticePage() {
 
       {/* Completion Dialog */}
       <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
-        <DialogContent>
+        <DialogContent className="modern-dialog p-6">
           <DialogHeader>
-            <DialogTitle>Practice Complete</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-bold">
+              <span className="gradient-text">Practice Complete</span>
+            </DialogTitle>
+            <DialogDescription className="text-gray-500">
               You have completed the practice question. You are now ready to start the actual test.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCompletionDialog(false)}>
+          <DialogFooter className="pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowCompletionDialog(false)}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
               Review Practice
             </Button>
-            <Button onClick={handleCompletePractice}>Start Test</Button>
+            <Button onClick={handleCompletePractice} className="button-gradient">
+              Start Test
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
