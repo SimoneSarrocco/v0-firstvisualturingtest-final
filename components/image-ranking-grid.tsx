@@ -80,8 +80,12 @@ export function ImageRankingGrid({ inputImage, models, onSubmit, initialRanking 
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
   const [fullSizeImage, setFullSizeImage] = useState<{ src: string; alt: string } | null>(null)
   const [comparisonMode, setComparisonMode] = useState<number | null>(null)
-  const [imageLabels, setImageLabels] = useState<Record<string, string>>({})
   const [isMounted, setIsMounted] = useState(false)
+
+  // Instead of storing labels in a state, we'll generate them on the fly based on current position
+  const getImageLabel = (index: number) => {
+    return String.fromCharCode(65 + index) // A, B, C, etc. based on current position
+  }
 
   // Check if we're on client-side
   useEffect(() => {
@@ -101,13 +105,6 @@ export function ImageRankingGrid({ inputImage, models, onSubmit, initialRanking 
     }
 
     setModelRanking(newRanking)
-
-    // Create image labels (A, B, C, etc.) for each model
-    const labels: Record<string, string> = {}
-    models.forEach((model, idx) => {
-      labels[model] = String.fromCharCode(65 + idx) // A, B, C, etc.
-    })
-    setImageLabels(labels)
   }, [inputImage, models, initialRanking])
 
   // Get the correct image filename based on model and image number
@@ -145,7 +142,7 @@ export function ImageRankingGrid({ inputImage, models, onSubmit, initialRanking 
       const model = modelRanking[index]
       setFullSizeImage({
         src: getImageSrc(model),
-        alt: `Enhanced Image ${imageLabels[model]}`,
+        alt: `Enhanced Image ${getImageLabel(index)}`,
       })
       setSelectedImageIndex(null)
     } else {
@@ -171,7 +168,7 @@ export function ImageRankingGrid({ inputImage, models, onSubmit, initialRanking 
     const model = modelRanking[index]
     setFullSizeImage({
       src: getImageSrc(model),
-      alt: `Enhanced Image ${imageLabels[model]}`,
+      alt: `Enhanced Image ${getImageLabel(index)}`,
     })
   }
 
@@ -190,21 +187,22 @@ export function ImageRankingGrid({ inputImage, models, onSubmit, initialRanking 
       {/* Original image on the left */}
       <div className="space-y-2">
         <h3 className="font-medium">Original Image:</h3>
-        <div className="relative border border-gray-300 rounded-md overflow-hidden">
-          <Image
-            src={getImageSrc(null) || "/placeholder.svg"}
-            alt="Original OCT image"
-            width={384}
-            height={248}
-            className="w-full h-auto cursor-pointer"
-            onClick={() =>
-              setFullSizeImage({
-                src: getImageSrc(null),
-                alt: "Original OCT image",
-              })
-            }
-            unoptimized
-          />
+        <div className="relative border border-gray-300 rounded-md overflow-hidden flex justify-center">
+          <div className="w-full h-[496px] relative">
+            <Image
+              src={getImageSrc(null) || "/placeholder.svg"}
+              alt="Original OCT image"
+              fill
+              className="object-contain cursor-pointer"
+              onClick={() =>
+                setFullSizeImage({
+                  src: getImageSrc(null),
+                  alt: "Original OCT image",
+                })
+              }
+              unoptimized
+            />
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -227,7 +225,7 @@ export function ImageRankingGrid({ inputImage, models, onSubmit, initialRanking 
         <h3 className="font-medium">Enhanced Images - Rank from Best (1) to Worst (5):</h3>
         <div className="grid grid-cols-3 gap-2">
           {modelRanking.map((model, index) => {
-            const label = imageLabels[model] || String.fromCharCode(65 + models.indexOf(model))
+            const label = getImageLabel(index) // Get label based on current position
             const borderColorClass = getBorderColorClass(index)
             const bgColorClass = getBgColorClass(index)
             const textColorClass = getTextColorClass(index)
@@ -263,21 +261,22 @@ export function ImageRankingGrid({ inputImage, models, onSubmit, initialRanking 
                     />
                   ) : (
                     <>
-                      <Image
-                        src={getImageSrc(model) || "/placeholder.svg"}
-                        alt={`Enhanced Image ${label}`}
-                        width={384}
-                        height={248}
-                        className="w-full h-auto cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setFullSizeImage({
-                            src: getImageSrc(model),
-                            alt: `Enhanced Image ${label}`,
-                          })
-                        }}
-                        unoptimized
-                      />
+                      <div className="w-full aspect-[1.55] relative">
+                        <Image
+                          src={getImageSrc(model) || "/placeholder.svg"}
+                          alt={`Enhanced Image ${label}`}
+                          fill
+                          className="object-cover cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setFullSizeImage({
+                              src: getImageSrc(model),
+                              alt: `Enhanced Image ${label}`,
+                            })
+                          }}
+                          unoptimized
+                        />
+                      </div>
                       <div className="absolute top-1 left-1 bg-white/80 px-1 py-0.5 text-xs font-medium rounded">
                         {label}
                       </div>

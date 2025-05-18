@@ -30,22 +30,23 @@ export function SimpleImageViewer({ src, alt, onClose }: SimpleImageViewerProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80" onClick={onClose}>
-      <div className="relative max-w-[90vw] max-h-[90vh]">
+      <div className="relative">
         <button
           className="absolute top-2 right-2 z-10 flex items-center justify-center w-8 h-8 bg-white rounded-full"
           onClick={onClose}
         >
           <X className="w-5 h-5" />
         </button>
-        <Image
-          src={src || "/placeholder.svg"}
-          alt={alt}
-          width={768}
-          height={496}
-          className="max-w-full max-h-[90vh] object-contain"
-          onClick={(e) => e.stopPropagation()}
-          unoptimized
-        />
+        <div className="w-[768px] h-[496px] relative">
+          <Image
+            src={src || "/placeholder.svg"}
+            alt={alt}
+            fill
+            className="object-contain"
+            onClick={(e) => e.stopPropagation()}
+            unoptimized
+          />
+        </div>
       </div>
     </div>
   )
