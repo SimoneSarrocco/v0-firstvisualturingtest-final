@@ -1,7 +1,6 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -88,7 +87,8 @@ export default function TestPage() {
   // Add a key to force re-render of the component
   const [rankingKey, setRankingKey] = useState(0)
 
-  // Initialize test sequence on component mount
+  // Modify the initializeTest function to properly handle session state
+  // Replace the existing initializeTest function with this updated version
   const initializeTest = useCallback(async () => {
     // Only access localStorage on the client side
     if (typeof window !== "undefined") {
@@ -129,26 +129,51 @@ export default function TestPage() {
       try {
         const savedRankings = localStorage.getItem("oct_rankings")
         if (savedRankings) {
-          const parsedRankings = JSON.parse(savedRankings)
-          setRankings(parsedRankings)
+          try {
+            const parsedRankings = JSON.parse(savedRankings)
 
-          // Mark questions as completed if they have rankings
-          const newCompleted = new Set()
-          sequence.forEach((imageId, index) => {
-            if (parsedRankings[imageId]) {
-              newCompleted.add(index)
+            // Validate the rankings - check if they match our current test sequence
+            let validRankings = false
+            for (const imageId of sequence) {
+              if (parsedRankings[imageId]) {
+                validRankings = true
+                break
+              }
             }
-          })
-          setCompletedQuestions(newCompleted)
+
+            if (validRankings) {
+              setRankings(parsedRankings)
+
+              // Mark questions as completed if they have rankings
+              const newCompleted = new Set()
+              sequence.forEach((imageId, index) => {
+                if (parsedRankings[imageId]) {
+                  newCompleted.add(index)
+                }
+              })
+              setCompletedQuestions(newCompleted)
+            } else {
+              // If rankings don't match our sequence, clear them
+              console.log("Saved rankings don't match current test sequence, starting fresh")
+              localStorage.removeItem("oct_rankings")
+              setRankings({})
+              setCompletedQuestions(new Set())
+            }
+          } catch (error) {
+            console.error("Error parsing saved rankings:", error)
+            localStorage.removeItem("oct_rankings")
+            setRankings({})
+            setCompletedQuestions(new Set())
+          }
+        } else {
+          // No saved rankings found
+          setRankings({})
+          setCompletedQuestions(new Set())
         }
       } catch (error) {
         console.error("Error loading saved rankings:", error)
-      }
-
-      // If already submitted, mark all questions as completed
-      if (hasSubmittedInSession()) {
-        const allCompleted = new Set(Array.from({ length: sequence.length }, (_, i) => i))
-        setCompletedQuestions(allCompleted)
+        setRankings({})
+        setCompletedQuestions(new Set())
       }
 
       // Check if Supabase environment variables are available
@@ -525,6 +550,22 @@ export default function TestPage() {
     }
   }
 
+  // Clear session data and restart test
+  const clearSessionAndRestart = () => {
+    if (window.confirm("This will clear all your current progress and restart the test. Are you sure?")) {
+      window.localStorage.clear()
+      setRankings({})
+      setCompletedQuestions(new Set())
+      setModifiedQuestions(new Set())
+      setCurrentImageIndex(0)
+      toast({
+        title: "Test reset",
+        description: "All progress has been cleared and the test has been restarted.",
+        variant: "info",
+      })
+    }
+  }
+
   // Get question status icon/indicator
   const getQuestionStatusIndicator = (index) => {
     if (modifiedQuestions.has(index)) {
@@ -559,7 +600,7 @@ export default function TestPage() {
 
   return (
     <div className="w-full px-0 py-1 mx-auto">
-      <Card className="modern-card mb-1 w-full max-w-none rounded-none">
+      <Card className="w-full">
         <CardHeader className="pb-0 pt-2 px-4 modern-header">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center justify-between text-lg">
@@ -589,6 +630,16 @@ export default function TestPage() {
                 </Button>
               ))}
             </div>
+
+            {/* Reset button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearSessionAndRestart}
+              className="ml-2 text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" /> Reset
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="pt-2 space-y-1 px-4">

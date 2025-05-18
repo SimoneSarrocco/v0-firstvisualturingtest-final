@@ -126,6 +126,24 @@ export function removeFromStorage(key: string): boolean {
   }
 }
 
+/**
+ * Clear all test-related data from localStorage and sessionStorage
+ */
+export function clearTestSessionData(): void {
+  try {
+    // Clear rankings
+    localStorage.removeItem("oct_rankings")
+
+    // Clear submission status
+    sessionStorage.removeItem(SUBMISSION_TIMESTAMP_KEY)
+
+    // Don't clear clinician data or device ID as those should persist
+    console.log("Test session data cleared")
+  } catch (error) {
+    console.error("Error clearing test session data:", error)
+  }
+}
+
 // Export storage keys for use in other files
 export {
   DEVICE_ID_KEY,
