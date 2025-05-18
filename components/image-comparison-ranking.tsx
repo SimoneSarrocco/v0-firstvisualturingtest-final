@@ -117,25 +117,20 @@ export function ImageComparisonRanking({
       let newRanking: string[] = []
       const letters: Record<string, string> = {}
 
+      // First, assign letters A-E to models in their original order
+      // This ensures each model has a fixed letter regardless of position
+      models.forEach((model, index) => {
+        letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
+      })
+
       // If initial ranking provided, use it exactly as is
       if (initialRanking && initialRanking.length === models.length) {
         // For previously answered questions, use the exact saved ranking
         newRanking = [...initialRanking]
-
-        // For previously answered questions, we need to assign letters based on position
-        // This ensures the letters are preserved exactly as they were when submitted
-        newRanking.forEach((model, index) => {
-          letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
-        })
       } else {
-        // For new questions, create a randomized ranking
-        newRanking = [...models].sort(() => 0.5 - Math.random())
-
-        // For new questions, assign letters A-E in order from left to right
-        // This ensures the letters are always A-B-C-D-E from left to right
-        newRanking.forEach((model, index) => {
-          letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
-        })
+        // For new questions, use the original order (A-B-C-D-E)
+        // This ensures new questions always start with A-B-C-D-E from left to right
+        newRanking = [...models]
       }
 
       setModelRanking(newRanking)
@@ -206,13 +201,6 @@ export function ImageComparisonRanking({
         newRanking.splice(draggedIndex, 1)
         newRanking.splice(index, 0, draggedModel)
         setModelRanking(newRanking)
-
-        // Update the letters to maintain A-B-C-D-E from left to right
-        const newLetters = { ...modelLetters }
-        newRanking.forEach((model, idx) => {
-          newLetters[model] = String.fromCharCode(65 + idx) // A, B, C, D, E
-        })
-        setModelLetters(newLetters)
 
         // Notify parent of ranking change
         if (onChange) {

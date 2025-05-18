@@ -125,6 +125,26 @@ export default function TestPage() {
       const sequence = generateTestSequence()
       setTestSequence(sequence)
 
+      // Try to load saved rankings from localStorage
+      try {
+        const savedRankings = localStorage.getItem("oct_rankings")
+        if (savedRankings) {
+          const parsedRankings = JSON.parse(savedRankings)
+          setRankings(parsedRankings)
+
+          // Mark questions as completed if they have rankings
+          const newCompleted = new Set()
+          sequence.forEach((imageId, index) => {
+            if (parsedRankings[imageId]) {
+              newCompleted.add(index)
+            }
+          })
+          setCompletedQuestions(newCompleted)
+        }
+      } catch (error) {
+        console.error("Error loading saved rankings:", error)
+      }
+
       // If already submitted, mark all questions as completed
       if (hasSubmittedInSession()) {
         const allCompleted = new Set(Array.from({ length: sequence.length }, (_, i) => i))
@@ -147,16 +167,6 @@ export default function TestPage() {
           console.error("Error testing Supabase connection:", error)
           setSupabaseError("Error testing Supabase connection")
         }
-      }
-
-      // Try to load saved rankings from localStorage
-      try {
-        const savedRankings = localStorage.getItem("oct_rankings")
-        if (savedRankings) {
-          setRankings(JSON.parse(savedRankings))
-        }
-      } catch (error) {
-        console.error("Error loading saved rankings:", error)
       }
 
       setLoading(false)
