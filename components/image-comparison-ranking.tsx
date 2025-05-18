@@ -117,20 +117,34 @@ export function ImageComparisonRanking({
       let newRanking: string[] = []
       const letters: Record<string, string> = {}
 
-      // First, assign letters A-E to models in their original order
-      // This ensures each model has a fixed letter regardless of position
-      models.forEach((model, index) => {
-        letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
-      })
-
       // If initial ranking provided, use it exactly as is
       if (initialRanking && initialRanking.length === models.length) {
         // For previously answered questions, use the exact saved ranking
         newRanking = [...initialRanking]
+
+        // For previously answered questions, we need to assign letters A-E in the original order
+        // This ensures the letters are in the same order as when the question was first seen
+        const originalOrder = [...models].sort(() => {
+          // Use a fixed seed based on the inputImage to ensure consistent randomization
+          const seed = inputImage * 9301 + 49297
+          return (seed % 233280) / 233280 - 0.5
+        })
+
+        originalOrder.forEach((model, index) => {
+          letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
+        })
       } else {
-        // For new questions, use the original order (A-B-C-D-E)
-        // This ensures new questions always start with A-B-C-D-E from left to right
-        newRanking = [...models]
+        // For new questions, randomize the models
+        // Use a fixed seed based on the inputImage to ensure consistent randomization
+        newRanking = [...models].sort(() => {
+          const seed = inputImage * 9301 + 49297
+          return (seed % 233280) / 233280 - 0.5
+        })
+
+        // Assign letters A-E based on position in the randomized order
+        newRanking.forEach((model, index) => {
+          letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
+        })
       }
 
       setModelRanking(newRanking)
