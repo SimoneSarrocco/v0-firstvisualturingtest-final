@@ -99,10 +99,7 @@ export function ImageComparisonRanking({
   const [fullSizeImage, setFullSizeImage] = useState<{ src: string; alt: string } | null>(null)
   const [isMounted, setIsMounted] = useState(false)
 
-  // Store the original order of models for this question
-  const [originalOrder, setOriginalOrder] = useState<string[]>([])
-
-  // Map to store the letter for each model
+  // Map to store the letter for each model - this is crucial for preserving letters
   const [modelLetters, setModelLetters] = useState<Record<string, string>>({})
 
   // Track the question id to reset when question changes
@@ -135,10 +132,8 @@ export function ImageComparisonRanking({
       const seed = inputImage * 9301 + 49297
       const randomOrder = getRandomOrder(models, seed)
 
-      // Store the original random order for this question
-      setOriginalOrder(randomOrder)
-
-      // Assign letters A-E to models based on their position in the original order
+      // Assign letters A-E to models based on their position in the original random order
+      // This ensures letters are fixed to models for this question
       const letters: Record<string, string> = {}
       randomOrder.forEach((model, index) => {
         letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
@@ -205,16 +200,24 @@ export function ImageComparisonRanking({
     }
   }
 
-  // Handle drop to reorder
-  const handleDrop = (e: React.DragEvent, index: number) => {
+  // Handle drop to reorder - FIXED to use direct swap
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault()
 
     if (draggedModel) {
-      const draggedIndex = modelRanking.indexOf(draggedModel)
-      if (draggedIndex !== -1 && draggedIndex !== index) {
+      const sourceIndex = modelRanking.indexOf(draggedModel)
+
+      if (sourceIndex !== -1 && sourceIndex !== targetIndex) {
+        // Create a new array with the same items
         const newRanking = [...modelRanking]
-        newRanking.splice(draggedIndex, 1)
-        newRanking.splice(index, 0, draggedModel)
+
+        // Get the model at the target position
+        const targetModel = newRanking[targetIndex]
+
+        // Perform a direct swap - this ensures only the two items change positions
+        newRanking[targetIndex] = draggedModel
+        newRanking[sourceIndex] = targetModel
+
         setModelRanking(newRanking)
 
         // Notify parent of ranking change
@@ -222,6 +225,7 @@ export function ImageComparisonRanking({
           onChange(newRanking)
         }
       }
+
       setDraggedModel(null)
       setDragOverIndex(null)
     }
@@ -319,7 +323,7 @@ export function ImageComparisonRanking({
                   style={{ objectFit: "none" }}
                   unoptimized
                 />
-                <div className="absolute top-1 left-1 bg-white/80 px-1 py-0.5 text-xs font-medium rounded">
+                <div className="absolute top-1 left-1 bg-white/80 px-2 py-1 text-sm font-bold rounded">
                   {modelLetters[selectedModel]}
                 </div>
                 <Button
@@ -370,6 +374,7 @@ export function ImageComparisonRanking({
             const textColorClass = getTextColorClass(index)
             const isDragging = draggedModel === model
             const isDragOver = dragOverIndex === index
+            const letter = modelLetters[model] || "?"
 
             return (
               <div
@@ -400,15 +405,13 @@ export function ImageComparisonRanking({
                   <div className="aspect-[1.55] relative">
                     <Image
                       src={getImageSrc(model) || "/placeholder.svg"}
-                      alt={`Enhanced Image ${modelLetters[model]}`}
+                      alt={`Enhanced Image ${letter}`}
                       fill
                       className="object-cover"
                       unoptimized
                     />
                   </div>
-                  <div className="absolute top-1 left-1 bg-white/80 px-1 py-0.5 text-xs font-medium rounded">
-                    {modelLetters[model]}
-                  </div>
+                  <div className="absolute top-1 left-1 bg-white/80 px-2 py-1 text-sm font-bold rounded">{letter}</div>
                 </div>
               </div>
             )
