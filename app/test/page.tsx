@@ -16,7 +16,6 @@ import { Progress } from "@/components/ui/progress"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { ImageComparisonRanking } from "@/components/image-comparison-ranking"
-import { createClient, testSupabaseConnection } from "@/lib/supabase-client"
 import { Download, AlertCircle, Mail, Lock, CheckCircle, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { formatRankingsForExport, createCSV, downloadCSV } from "@/lib/export-utils"
@@ -25,23 +24,11 @@ import {
   getFromStorage,
   removeFromStorage,
   getOrCreateDeviceId,
-  getOrCreateSessionId,
-  saveProgress,
-  getSavedProgress,
-  clearSavedProgress,
   hasSubmittedInSession,
   markSubmittedInSession,
   CLINICIAN_ID_KEY,
-  saveTestSequence,
 } from "@/lib/storage-utils"
-import {
-  getOrCreateSession,
-  saveProgressToSupabase,
-  getProgressFromSupabase,
-  saveRankingToSupabase,
-  completeSession,
-  getSessionRankings,
-} from "@/lib/session-manager"
+import { testSupabaseConnection, saveRankingsToSupabase } from "@/lib/supabase-utils"
 
 // Define model types - but don't show their names to users
 const models = ["DDPM", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
@@ -92,18 +79,14 @@ export default function TestPage() {
   const [submitting, setSubmitting] = useState(false)
   const [showCompletionDialog, setShowCompletionDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
-  const [showResumeDialog, setShowResumeDialog] = useState(false)
   const [clinicianId, setClinicianId] = useState("")
-  const [sessionId, setSessionId] = useState("")
   const [clinicianData, setClinicianData] = useState({})
   const [completedQuestions, setCompletedQuestions] = useState(new Set())
   const [supabaseError, setSupabaseError] = useState(null)
   const [isMounted, setIsMounted] = useState(false)
   const [showSavedIndicator, setShowSavedIndicator] = useState(false)
-  const [savingToSupabase, setSavingToSupabase] = useState(false)
   const [retryingConnection, setRetryingConnection] = useState(false)
   const savedIndicatorTimeoutRef = useRef(null)
-  const saveToSupabaseTimeoutRef = useRef(null)
 
   // Initialize test sequence on component mount
   const initializeTest = useCallback(async () => {
@@ -136,44 +119,11 @@ export default function TestPage() {
           experience: getFromStorage("oct_clinician_experience", "unknown"),
           created_at: getFromStorage("oct_clinician_created_at", new Date().toISOString()),
         })
-
-        // Get or create a session
-        try {
-          const { sessionId: sid } = await getOrCreateSession(storedClinicianId)
-          setSessionId(sid)
-        } catch (error) {
-          console.error("Error getting or creating session:", error)
-          // Use the local session ID as fallback
-          setSessionId(getOrCreateSessionId())
-        }
       }
 
-      // Check if we have any saved progress
-      const savedProgress = getSavedProgress()
-
-      // Generate or retrieve the test sequence
-      let sequence
-      if (savedProgress && savedProgress.testSequence) {
-        // Use the saved test sequence
-        sequence = savedProgress.testSequence
-        console.log("Using saved test sequence:", sequence)
-      } else {
-        // Generate a new test sequence
-        sequence = generateTestSequence()
-        // Save the test sequence to localStorage
-        saveTestSequence(sequence)
-        console.log("Generated new test sequence:", sequence)
-      }
-
+      // Generate a new test sequence
+      const sequence = generateTestSequence()
       setTestSequence(sequence)
-
-      if (savedProgress) {
-        // Ask user if they want to resume
-        setShowResumeDialog(true)
-      } else {
-        // No saved progress, start fresh
-        clearSavedProgress()
-      }
 
       // Test Supabase connection
       const { success, error } = await testSupabaseConnection()
@@ -194,9 +144,6 @@ export default function TestPage() {
     return () => {
       if (savedIndicatorTimeoutRef.current) {
         clearTimeout(savedIndicatorTimeoutRef.current)
-      }
-      if (saveToSupabaseTimeoutRef.current) {
-        clearTimeout(saveToSupabaseTimeoutRef.current)
       }
     }
   }, [initializeTest])
@@ -232,154 +179,9 @@ export default function TestPage() {
     }
   }
 
-  // Save current progress to Supabase
-  const saveCurrentProgressToSupabase = async () => {
-    if (!sessionId || supabaseError) return
-
-    setSavingToSupabase(true)
-    try {
-      // Save progress
-      await saveProgressToSupabase(sessionId, currentImageIndex, Array.from(completedQuestions))
-
-      // Save all rankings
-      for (const [imageId, modelOrder] of Object.entries(rankings)) {
-        await saveRankingToSupabase(
-          sessionId,
-          clinicianId,
-          Number(imageId),
-          modelOrder,
-          modelSequences[imageId] || modelOrder,
-        )
-      }
-
-      console.log("Progress saved to Supabase")
-    } catch (error) {
-      console.error("Error saving progress to Supabase:", error)
-      setSupabaseError(error.message || "Could not save to database")
-    } finally {
-      setSavingToSupabase(false)
-    }
-  }
-
-  // Handle resume from saved progress
-  const handleResume = async () => {
-    const savedProgress = getSavedProgress()
-    if (savedProgress) {
-      console.log("Resuming from saved progress:", savedProgress)
-
-      // Validate the saved rankings against the test sequence
-      const validRankings = {}
-      const validModelSequences = {}
-      const validCompletedQuestions = new Set()
-
-      // Only include rankings for images that are in the current test sequence
-      Object.entries(savedProgress.rankings || {}).forEach(([imageId, ranking]) => {
-        const imageIdNum = Number(imageId)
-        if (testSequence.includes(imageIdNum)) {
-          validRankings[imageId] = ranking
-
-          // Find the index of this image in the test sequence
-          const questionIndex = testSequence.findIndex((img) => img === imageIdNum)
-          if (questionIndex !== -1) {
-            validCompletedQuestions.add(questionIndex)
-          }
-        }
-      })
-
-      // Only include model sequences for images that are in the current test sequence
-      Object.entries(savedProgress.modelSequences || {}).forEach(([imageId, sequence]) => {
-        if (testSequence.includes(Number(imageId))) {
-          validModelSequences[imageId] = sequence
-        }
-      })
-
-      console.log("Valid data after validation:", {
-        rankingsCount: Object.keys(validRankings).length,
-        modelSequencesCount: Object.keys(validModelSequences).length,
-        completedQuestionsCount: validCompletedQuestions.size,
-      })
-
-      // Try to get progress from Supabase if available
-      if (sessionId && !supabaseError) {
-        try {
-          const { success, progress } = await getProgressFromSupabase(sessionId)
-          if (success && progress) {
-            console.log("Retrieved progress from Supabase:", progress)
-
-            // Update current index from Supabase
-            setCurrentImageIndex(progress.current_index)
-
-            // Get rankings from Supabase
-            const { success: rankingsSuccess, rankings: supabaseRankings } = await getSessionRankings(sessionId)
-            if (rankingsSuccess && supabaseRankings.length > 0) {
-              console.log("Retrieved rankings from Supabase:", supabaseRankings)
-
-              // Convert Supabase rankings to the format we use locally
-              const supabaseRankingsMap = {}
-              const supabaseModelSequencesMap = {}
-              const supabaseCompletedQuestions = new Set()
-
-              supabaseRankings.forEach((ranking) => {
-                supabaseRankingsMap[ranking.image_id] = ranking.model_rankings
-                supabaseModelSequencesMap[ranking.image_id] = ranking.model_sequence
-
-                // Find the index of this image in the test sequence
-                const questionIndex = testSequence.findIndex((img) => img === ranking.image_id)
-                if (questionIndex !== -1) {
-                  supabaseCompletedQuestions.add(questionIndex)
-                }
-              })
-
-              // Merge with local data, preferring Supabase data
-              setRankings({ ...validRankings, ...supabaseRankingsMap })
-              setModelSequences({ ...validModelSequences, ...supabaseModelSequencesMap })
-              setCompletedQuestions(new Set([...validCompletedQuestions, ...supabaseCompletedQuestions]))
-
-              // Save the merged data to localStorage
-              saveProgress(
-                progress.current_index,
-                { ...validRankings, ...supabaseRankingsMap },
-                { ...validModelSequences, ...supabaseModelSequencesMap },
-                Array.from(new Set([...validCompletedQuestions, ...supabaseCompletedQuestions])),
-              )
-
-              setShowResumeDialog(false)
-              return
-            }
-          }
-        } catch (error) {
-          console.error("Error getting progress from Supabase:", error)
-        }
-      }
-
-      // Fall back to local data if Supabase retrieval fails
-      setCurrentImageIndex(savedProgress.currentIndex)
-      setRankings(validRankings)
-      setModelSequences(validModelSequences)
-      setCompletedQuestions(validCompletedQuestions)
-    }
-    setShowResumeDialog(false)
-  }
-
-  // Handle start fresh
-  const handleStartFresh = () => {
-    clearSavedProgress()
-    setShowResumeDialog(false)
-  }
-
   // Navigate to a specific question
   const navigateToQuestion = (index) => {
     setCurrentImageIndex(index)
-    // Save current image index
-    saveProgress(index, rankings, modelSequences, Array.from(completedQuestions))
-
-    // Schedule save to Supabase
-    if (saveToSupabaseTimeoutRef.current) {
-      clearTimeout(saveToSupabaseTimeoutRef.current)
-    }
-    saveToSupabaseTimeoutRef.current = setTimeout(() => {
-      saveCurrentProgressToSupabase()
-    }, 1000)
   }
 
   // Handle ranking submission for current image
@@ -405,17 +207,6 @@ export default function TestPage() {
     newCompleted.add(currentImageIndex)
     setCompletedQuestions(newCompleted)
 
-    // Save progress locally
-    saveProgress(currentImageIndex, newRankings, newModelSequences, Array.from(newCompleted))
-
-    // Schedule save to Supabase
-    if (saveToSupabaseTimeoutRef.current) {
-      clearTimeout(saveToSupabaseTimeoutRef.current)
-    }
-    saveToSupabaseTimeoutRef.current = setTimeout(() => {
-      saveCurrentProgressToSupabase()
-    }, 1000)
-
     // Show saved indicator
     setShowSavedIndicator(true)
 
@@ -437,9 +228,6 @@ export default function TestPage() {
       // Move to next question if not on the last one
       const nextIndex = currentImageIndex + 1
       setCurrentImageIndex(nextIndex)
-
-      // Save progress with new index
-      saveProgress(nextIndex, newRankings, newModelSequences, Array.from(newCompleted))
 
       if (typeof window !== "undefined") {
         window.scrollTo(0, 0)
@@ -483,50 +271,13 @@ export default function TestPage() {
 
       console.log("Connection test successful, proceeding with data submission")
 
-      const supabase = createClient()
-
-      // First, try to save clinician data if it hasn't been saved yet
-      try {
-        const { error: clinicianError } = await supabase.from("clinicians").upsert(
-          [
-            {
-              id: clinicianData.id,
-              name: clinicianData.name,
-              institution: clinicianData.institution,
-              experience: clinicianData.experience,
-              created_at: clinicianData.created_at,
-            },
-          ],
-          { onConflict: "id" },
-        )
-
-        if (clinicianError) {
-          console.warn("Could not save clinician data:", clinicianError)
-        }
-      } catch (err) {
-        console.warn("Error saving clinician data, continuing anyway:", err)
-      }
-
       // Save all rankings to Supabase
-      for (const [imageId, modelOrder] of Object.entries(rankings)) {
-        console.log("Saving ranking for image:", imageId)
+      const { success, error } = await saveRankingsToSupabase({ rankings, modelSequences }, clinicianId)
 
-        const { success, error } = await saveRankingToSupabase(
-          sessionId,
-          clinicianData.id,
-          Number(imageId),
-          modelOrder,
-          modelSequences[imageId] || modelOrder,
-        )
-
-        if (!success) {
-          console.error("Error saving ranking:", error)
-          throw new Error(`Error saving ranking: ${error}`)
-        }
+      if (!success) {
+        console.error("Error saving rankings:", error)
+        throw new Error(`Error saving rankings: ${error}`)
       }
-
-      // Mark session as completed
-      await completeSession(sessionId)
 
       console.log("All rankings submitted successfully")
 
@@ -646,7 +397,7 @@ export default function TestPage() {
                 <div className="flex items-center">
                   <AlertCircle className="h-4 w-4 mr-2" />
                   <AlertDescription>
-                    There was an error connecting to the database. Your answers are being saved locally.
+                    There was an error connecting to the database. Your answers will be saved locally.
                   </AlertDescription>
                 </div>
                 <Button
@@ -707,34 +458,8 @@ export default function TestPage() {
               Ranking saved
             </div>
           )}
-
-          {/* Saving to Supabase indicator */}
-          {savingToSupabase && (
-            <div className="fixed bottom-4 right-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-md shadow-md flex items-center">
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Saving to database...
-            </div>
-          )}
         </CardContent>
       </Card>
-
-      {/* Resume Dialog */}
-      <Dialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Resume Previous Session</DialogTitle>
-            <DialogDescription>
-              We found your previous progress. Would you like to resume from where you left off?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleStartFresh}>
-              Start Fresh
-            </Button>
-            <Button onClick={handleResume}>Resume Session</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Completion Dialog */}
       <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>

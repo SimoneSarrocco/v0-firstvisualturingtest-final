@@ -18,8 +18,7 @@ import {
   CLINICIAN_EXPERIENCE_KEY,
   CLINICIAN_CREATED_AT_KEY,
 } from "@/lib/storage-utils"
-import { createClient } from "@/lib/supabase-client"
-import { getOrCreateSession } from "@/lib/session-manager"
+import { saveClinicianToSupabase } from "@/lib/supabase-utils"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -48,49 +47,30 @@ export default function LoginPage() {
       const clinicianId = generateClinicianId()
       const timestamp = new Date().toISOString()
 
+      // Create clinician data object
+      const clinicianData = {
+        id: clinicianId,
+        name: name || "Anonymous",
+        institution: institution || "Not specified",
+        experience,
+        created_at: timestamp,
+      }
+
       // Save clinician data to localStorage
       saveToStorage(CLINICIAN_ID_KEY, clinicianId)
-      saveToStorage(CLINICIAN_NAME_KEY, name || "Anonymous")
-      saveToStorage(CLINICIAN_INSTITUTION_KEY, institution || "Not specified")
+      saveToStorage(CLINICIAN_NAME_KEY, clinicianData.name)
+      saveToStorage(CLINICIAN_INSTITUTION_KEY, clinicianData.institution)
       saveToStorage(CLINICIAN_EXPERIENCE_KEY, experience)
       saveToStorage(CLINICIAN_CREATED_AT_KEY, timestamp)
 
       // Try to save to Supabase if available
       try {
-        const supabase = createClient()
+        const { success, error } = await saveClinicianToSupabase(clinicianData)
 
-        // First check if the clinician already exists
-        const { data: existingClinician, error: checkError } = await supabase
-          .from("clinicians")
-          .select("*")
-          .eq("id", clinicianId)
-          .single()
-
-        if (checkError && checkError.code !== "PGRST116") {
-          // PGRST116 is "no rows returned"
-          console.warn("Error checking for existing clinician:", checkError)
+        if (!success) {
+          console.warn("Could not save to Supabase:", error)
+          setConnectionError(true)
         }
-
-        // Only insert if the clinician doesn't exist
-        if (!existingClinician) {
-          const { error: insertError } = await supabase.from("clinicians").insert([
-            {
-              id: clinicianId,
-              name: name || "Anonymous",
-              institution: institution || "Not specified",
-              experience,
-              created_at: timestamp,
-            },
-          ])
-
-          if (insertError) {
-            console.warn("Error inserting clinician:", insertError)
-            throw insertError
-          }
-        }
-
-        // Create a new session
-        await getOrCreateSession(clinicianId)
       } catch (err) {
         // If Supabase is not available, just continue but show a warning
         console.warn("Could not save to Supabase:", err)
