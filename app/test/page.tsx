@@ -424,9 +424,9 @@ export default function TestPage() {
   }
 
   return (
-    <div className="w-full px-4 py-1 max-w-[1400px] mx-auto">
-      <Card className="mb-2">
-        <CardHeader className="pb-1 pt-2">
+    <div className="w-full px-0 py-1 mx-auto">
+      <Card className="mb-2 w-full max-w-none rounded-none">
+        <CardHeader className="pb-1 pt-2 px-4">
           <CardTitle className="flex items-center justify-between text-lg">
             <span>
               Question {currentImageIndex + 1} of {testSequence.length}
@@ -434,7 +434,7 @@ export default function TestPage() {
             <span className="text-sm font-normal text-muted-foreground">Progress: {Math.round(progress)}%</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 space-y-2">
+        <CardContent className="pt-0 space-y-2 px-4">
           <Progress value={progress} className="mb-1" />
 
           {supabaseError && (

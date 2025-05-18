@@ -54,12 +54,12 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="w-full px-4 py-2 max-w-[1400px] mx-auto">
-      <Card className="mb-4">
-        <CardHeader className="pb-1">
+    <div className="w-full px-0 py-2">
+      <Card className="mb-4 w-full max-w-none mx-0">
+        <CardHeader className="pb-1 px-6">
           <CardTitle>Practice Question</CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 px-6">
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
               Click or drag an AI-enhanced image to compare it with the low-quality original. Rank the enhanced images

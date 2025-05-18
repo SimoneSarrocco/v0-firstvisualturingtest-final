@@ -4,6 +4,11 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
 @layer utilities {
@@ -101,6 +106,38 @@ body {
   body {
     background: linear-gradient(to bottom right, #f5f7fa, #e4ecf7);
   }
+
+  /* Make all cards full width */
+  .card {
+    max-width: none !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Remove default max-width constraints */
+  .max-w-7xl,
+  .max-w-6xl,
+  .max-w-5xl,
+  .max-w-4xl,
+  .max-w-3xl,
+  .max-w-2xl,
+  .max-w-xl,
+  .max-w-lg,
+  .max-w-md,
+  .max-w-sm,
+  .max-w-xs {
+    max-width: none !important;
+  }
+
+  /* Ensure all containers use full width */
+  .container,
+  .mx-auto {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
 }
 
 @layer components {
@@ -149,5 +186,33 @@ body {
 
   .rank-button-selected-5 {
     @apply bg-red-600 text-white hover:bg-red-700 border-red-700;
+  }
+}
+
+/* Full width container styles */
+.full-width-container {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+}
+
+/* Ensure images are centered on all screen sizes */
+@media (max-width: 1599px) {
+  .full-width-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .full-width-container::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .full-width-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
   }
 }

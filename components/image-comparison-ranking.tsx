@@ -203,87 +203,90 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
   }
 
   return (
-    <div className="flex flex-col space-y-3">
+    <div className="flex flex-col space-y-6 w-full">
       {/* Main comparison area */}
-      <div className="flex flex-col md:flex-row gap-4 mb-2">
-        {/* Original image on the left */}
-        <div className="w-full md:w-1/2 space-y-1">
-          <h3 className="font-medium">Low-quality OCT Image:</h3>
-          <div
-            className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
-            onClick={() => handleViewFullImage(null)}
-            style={{ height: "496px" }}
-          >
-            <div className="w-full h-full flex items-center justify-center">
+      <div className="full-width-container">
+        <div className="flex flex-col xl:flex-row justify-center items-center xl:items-start gap-4">
+          {/* Original image on the left */}
+          <div className="space-y-1">
+            <h3 className="font-medium">Low-quality OCT Image:</h3>
+            <div
+              className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
+              onClick={() => handleViewFullImage(null)}
+              style={{ width: "768px", height: "496px" }}
+            >
               <Image
                 src={getImageSrc(null) || "/placeholder.svg"}
                 alt="Low-quality OCT image"
                 width={768}
                 height={496}
-                className="max-h-full w-auto"
+                style={{ objectFit: "none" }}
                 unoptimized
               />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleViewFullImage(null, e)
+                }}
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white"
-              onClick={(e) => handleViewFullImage(null, e)}
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
           </div>
-        </div>
 
-        {/* Selected model image on the right */}
-        <div
-          className="w-full md:w-1/2 space-y-1 border-2 border-dashed border-gray-300 rounded-md p-2"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDropToComparison}
-        >
-          <h3 className="font-medium">
-            {selectedModel
-              ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
-              : "Drag an image here to compare:"}
-          </h3>
-          {selectedModel ? (
-            <div
-              className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
-              onClick={() => handleViewFullImage(selectedModel)}
-              style={{ height: "496px" }}
-            >
-              <div className="w-full h-full flex items-center justify-center">
+          {/* Selected model image on the right */}
+          <div className="space-y-1" onDragOver={(e) => e.preventDefault()} onDrop={handleDropToComparison}>
+            <h3 className="font-medium">
+              {selectedModel
+                ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
+                : "Drag an image here to compare:"}
+            </h3>
+            {selectedModel ? (
+              <div
+                className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
+                onClick={() => handleViewFullImage(selectedModel)}
+                style={{ width: "768px", height: "496px" }}
+              >
                 <Image
                   src={getImageSrc(selectedModel) || "/placeholder.svg"}
                   alt={`Enhanced Image ${modelLetters[selectedModel]}`}
                   width={768}
                   height={496}
-                  className="max-h-full w-auto"
+                  style={{ objectFit: "none" }}
                   unoptimized
                 />
+                <div className="absolute top-1 left-1 bg-white/80 px-1 py-0.5 text-xs font-medium rounded">
+                  {modelLetters[selectedModel]}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleViewFullImage(selectedModel, e)
+                  }}
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
               </div>
-              <div className="absolute top-1 left-1 bg-white/80 px-1 py-0.5 text-xs font-medium rounded">
-                {modelLetters[selectedModel]}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white"
-                onClick={(e) => handleViewFullImage(selectedModel, e)}
+            ) : (
+              <div
+                className="flex items-center justify-center border border-dashed border-gray-300 rounded-md bg-gray-50"
+                style={{ width: "768px", height: "496px" }}
               >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-[496px] bg-gray-50 rounded-md">
-              <p className="text-gray-500">Drag an image here to compare</p>
-            </div>
-          )}
+                <p className="text-gray-500">Drag an image here to compare</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Model ranking area at the bottom */}
-      <div className="space-y-1">
+      {/* Model ranking area at the bottom - with added margin-top */}
+      <div className="space-y-1 mt-6 w-full">
         <h3 className="font-medium">Rank AI-generated Enhanced Images:</h3>
         <p className="text-sm text-gray-500 mb-2">
           Drag images to reorder from best (left) to worst (right). Click any image to view it in the comparison area.
@@ -346,20 +349,21 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
         <Button onClick={handleSubmit}>Submit Ranking</Button>
       </div>
 
-      {/* Full-size image dialog */}
+      {/* Full-size image dialog - now with white background */}
       <Dialog open={!!fullSizeImage} onOpenChange={() => setFullSizeImage(null)}>
         <DialogContent
-          className="max-w-[90vw] max-h-[90vh] p-0 overflow-hidden flex items-center justify-center bg-black border-0 shadow-none"
+          className="max-w-[90vw] max-h-[90vh] p-0 overflow-hidden flex items-center justify-center bg-white border-0 shadow-xl"
           onClick={() => setFullSizeImage(null)}
         >
           {fullSizeImage && (
-            <div className="relative flex items-center justify-center">
+            <div className="relative flex items-center justify-center p-4">
               <Image
                 src={fullSizeImage.src || "/placeholder.svg"}
                 alt={fullSizeImage.alt}
                 width={768}
                 height={496}
-                className="max-h-[90vh] w-auto"
+                className="border border-gray-300"
+                style={{ objectFit: "none" }}
                 onClick={(e) => e.stopPropagation()}
                 unoptimized
               />
