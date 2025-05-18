@@ -63,6 +63,19 @@ const getBgColorClass = (position: number): string => {
   }
 }
 
+// Generate a deterministic random order based on a seed
+const getRandomOrder = (array: string[], seed: number): string[] => {
+  const newArray = [...array]
+  // Simple deterministic shuffle algorithm
+  for (let i = newArray.length - 1; i > 0; i--) {
+    // Use a deterministic random number based on seed and current index
+    const seededRandom = ((seed * (i + 1)) % 233280) / 233280
+    const j = Math.floor(seededRandom * (i + 1))
+    ;[newArray[i], newArray[j]] = [newArray[j], newArray[i]]
+  }
+  return newArray
+}
+
 interface ImageComparisonRankingProps {
   inputImage: number
   models: string[]
@@ -86,7 +99,10 @@ export function ImageComparisonRanking({
   const [fullSizeImage, setFullSizeImage] = useState<{ src: string; alt: string } | null>(null)
   const [isMounted, setIsMounted] = useState(false)
 
-  // Map to store the letter for each model - this is crucial for preserving letters
+  // Store the original order of models for this question
+  const [originalOrder, setOriginalOrder] = useState<string[]>([])
+
+  // Map to store the letter for each model
   const [modelLetters, setModelLetters] = useState<Record<string, string>>({})
 
   // Track the question id to reset when question changes
@@ -114,46 +130,31 @@ export function ImageComparisonRanking({
   // Initialize model ranking and letters
   useEffect(() => {
     if (!isInitializedRef.current) {
-      let newRanking: string[] = []
+      // Generate a deterministic random order for this question
+      // Use the inputImage as a seed to ensure the same order for the same question
+      const seed = inputImage * 9301 + 49297
+      const randomOrder = getRandomOrder(models, seed)
+
+      // Store the original random order for this question
+      setOriginalOrder(randomOrder)
+
+      // Assign letters A-E to models based on their position in the original order
       const letters: Record<string, string> = {}
-
-      // If initial ranking provided, use it exactly as is
-      if (initialRanking && initialRanking.length === models.length) {
-        // For previously answered questions, use the exact saved ranking
-        newRanking = [...initialRanking]
-
-        // For previously answered questions, we need to assign letters A-E in the original order
-        // This ensures the letters are in the same order as when the question was first seen
-        const originalOrder = [...models].sort(() => {
-          // Use a fixed seed based on the inputImage to ensure consistent randomization
-          const seed = inputImage * 9301 + 49297
-          return (seed % 233280) / 233280 - 0.5
-        })
-
-        originalOrder.forEach((model, index) => {
-          letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
-        })
-      } else {
-        // For new questions, randomize the models
-        // Use a fixed seed based on the inputImage to ensure consistent randomization
-        newRanking = [...models].sort(() => {
-          const seed = inputImage * 9301 + 49297
-          return (seed % 233280) / 233280 - 0.5
-        })
-
-        // Assign letters A-E based on position in the randomized order
-        newRanking.forEach((model, index) => {
-          letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
-        })
-      }
-
-      setModelRanking(newRanking)
+      randomOrder.forEach((model, index) => {
+        letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
+      })
       setModelLetters(letters)
 
-      // Set the first model as selected by default
-      if (newRanking.length > 0) {
-        setSelectedModel(newRanking[0])
+      // If we have a saved ranking, use it
+      if (initialRanking && initialRanking.length === models.length) {
+        setModelRanking([...initialRanking])
+      } else {
+        // Otherwise use the random order
+        setModelRanking([...randomOrder])
       }
+
+      // Set the first model as selected by default
+      setSelectedModel(initialRanking ? initialRanking[0] : randomOrder[0])
 
       isInitializedRef.current = true
     }
