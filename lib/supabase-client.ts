@@ -2,6 +2,11 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 let supabaseInstance: ReturnType<typeof createSupabaseClient> | null = null
 
+// Hardcoded credentials for testing - these should be moved to environment variables in production
+const SUPABASE_URL = "https://foicozgezyjrbebpvbid.supabase.co"
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvaWNvemdlenlqcmJlYnB2YmlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc0MTE4ODMsImV4cCI6MjA2Mjk4Nzg4M30.TuI3sRRaRFfjDy8WpBdvkvwK-T_UeFviIKxpmHuF0ZA"
+
 export const createClient = () => {
   // Don't create a client during SSR
   if (typeof window === "undefined") {
@@ -12,21 +17,9 @@ export const createClient = () => {
     return supabaseInstance
   }
 
-  // Use the environment variables that are available in the Vercel project
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseKey) {
-    console.error("Missing Supabase environment variables:", {
-      hasUrl: !!supabaseUrl,
-      hasKey: !!supabaseKey,
-    })
-    throw new Error("Missing Supabase environment variables")
-  }
-
   try {
-    console.log("Creating Supabase client with URL:", supabaseUrl)
-    supabaseInstance = createSupabaseClient(supabaseUrl, supabaseKey, {
+    console.log("Creating Supabase client with URL:", SUPABASE_URL)
+    supabaseInstance = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: false, // Don't persist auth state to avoid issues
       },
@@ -46,20 +39,7 @@ export const createClient = () => {
   }
 }
 
-// Test the Supabase connection
-export const testSupabaseConnection = async () => {
-  try {
-    const supabase = createClient()
-    const { data, error } = await supabase.from("clinicians").select("count(*)", { count: "exact", head: true })
-
-    if (error) {
-      console.error("Supabase connection test failed:", error)
-      return { success: false, error: error.message }
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error("Error testing Supabase connection:", error)
-    return { success: false, error: error.message || "Unknown error" }
-  }
+// Check if Supabase credentials are available
+export const hasSupabaseCredentials = () => {
+  return !!(SUPABASE_URL && SUPABASE_ANON_KEY)
 }

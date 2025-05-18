@@ -28,7 +28,7 @@ import {
   markSubmittedInSession,
   CLINICIAN_ID_KEY,
 } from "@/lib/storage-utils"
-import { testSupabaseConnection, saveRankingsToSupabase } from "@/lib/supabase-utils"
+import { testSupabaseConnection, saveRankingsToSupabase, hasSupabaseEnvVars } from "@/lib/supabase-utils"
 
 // Define model types - but don't show their names to users
 const models = ["DDPM", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
@@ -125,11 +125,22 @@ export default function TestPage() {
       const sequence = generateTestSequence()
       setTestSequence(sequence)
 
-      // Test Supabase connection
-      const { success, error } = await testSupabaseConnection()
-      if (!success) {
-        console.warn("Supabase connection test failed:", error)
-        setSupabaseError(error || "Could not connect to database")
+      // Check if Supabase environment variables are available
+      if (!hasSupabaseEnvVars()) {
+        console.warn("Supabase environment variables not found")
+        setSupabaseError("Supabase environment variables not found")
+      } else {
+        // Test Supabase connection only if environment variables are available
+        try {
+          const { success, error } = await testSupabaseConnection()
+          if (!success) {
+            console.warn("Supabase connection test failed:", error)
+            setSupabaseError(error || "Could not connect to database")
+          }
+        } catch (error) {
+          console.error("Error testing Supabase connection:", error)
+          setSupabaseError("Error testing Supabase connection")
+        }
       }
 
       setLoading(false)
@@ -155,6 +166,18 @@ export default function TestPage() {
   const retrySupabaseConnection = async () => {
     setRetryingConnection(true)
     try {
+      // Check if environment variables are available first
+      if (!hasSupabaseEnvVars()) {
+        setSupabaseError("Supabase environment variables not found")
+        toast({
+          title: "Connection failed",
+          description: "Supabase environment variables are missing. Your answers will be saved locally.",
+          variant: "destructive",
+        })
+        setRetryingConnection(false)
+        return
+      }
+
       const { success, error } = await testSupabaseConnection()
       if (success) {
         setSupabaseError(null)
@@ -260,6 +283,29 @@ export default function TestPage() {
     }
 
     setSubmitting(true)
+
+    // Check if Supabase is available
+    if (!hasSupabaseEnvVars() || supabaseError) {
+      console.warn("Supabase not available, showing export dialog")
+      setSupabaseError(supabaseError || "Supabase environment variables not found")
+
+      // Save data to session storage for the thank you page
+      sessionStorage.setItem("rankings", JSON.stringify(rankings))
+      sessionStorage.setItem("modelSequences", JSON.stringify(modelSequences))
+      sessionStorage.setItem("clinicianId", clinicianData.id)
+      sessionStorage.setItem("clinicianName", clinicianData.name)
+      sessionStorage.setItem("clinicianInstitution", clinicianData.institution)
+      sessionStorage.setItem("clinicianExperience", clinicianData.experience)
+      sessionStorage.setItem("clinicianCreatedAt", clinicianData.created_at)
+      sessionStorage.setItem("supabaseSaveStatus", "failed")
+
+      // Show export dialog
+      setShowExportDialog(true)
+      setSubmitting(false)
+      setShowCompletionDialog(false)
+      return
+    }
+
     try {
       // First, check if we can connect to Supabase
       const { success: connectionSuccess, error: connectionError } = await testSupabaseConnection()
@@ -397,18 +443,22 @@ export default function TestPage() {
                 <div className="flex items-center">
                   <AlertCircle className="h-4 w-4 mr-2" />
                   <AlertDescription>
-                    There was an error connecting to the database. Your answers will be saved locally.
+                    {supabaseError.includes("environment variables")
+                      ? "Database connection not configured. Your answers will be saved locally."
+                      : "There was an error connecting to the database. Your answers will be saved locally."}
                   </AlertDescription>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={retrySupabaseConnection}
-                  disabled={retryingConnection}
-                  className="ml-2 min-w-[80px]"
-                >
-                  {retryingConnection ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Retry"}
-                </Button>
+                {!supabaseError.includes("environment variables") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={retrySupabaseConnection}
+                    disabled={retryingConnection}
+                    className="ml-2 min-w-[80px]"
+                  >
+                    {retryingConnection ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Retry"}
+                  </Button>
+                )}
               </div>
             </Alert>
           )}
@@ -487,8 +537,9 @@ export default function TestPage() {
           <DialogHeader>
             <DialogTitle>Database Connection Error</DialogTitle>
             <DialogDescription>
-              We couldn't connect to our database to save your results. This could be due to network issues or because
-              the app hasn't been deployed yet.
+              {supabaseError && supabaseError.includes("environment variables")
+                ? "The database connection is not configured. You can export your results as a CSV file."
+                : "We couldn't connect to our database to save your results. This could be due to network issues or because the app hasn't been deployed yet."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
