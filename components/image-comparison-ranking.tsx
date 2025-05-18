@@ -203,13 +203,25 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
   }
 
   return (
-    <div className="flex flex-col space-y-6 w-full">
-      {/* Main comparison area */}
-      <div className="full-width-container">
-        <div className="flex flex-col xl:flex-row justify-center items-center xl:items-start gap-4">
+    <div className="flex flex-col space-y-3 w-full">
+      {/* Instructions - Made more prominent but compact */}
+      <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-1">
+        <p className="text-blue-800 font-medium text-sm">
+          Click or drag an AI-enhanced image to compare it with the low-quality original in full resolution
+          side-by-side. Rank the enhanced images from best (leftmost) to worst (rightmost) by dragging them into order
+          in the section below.
+        </p>
+      </div>
+
+      {/* Main comparison area with dotted border and label - more compact */}
+      <div className="relative border-2 border-dashed border-blue-300 rounded-lg p-3 pb-4">
+        {/* Comparison Area Label */}
+        <div className="absolute -top-3 left-4 bg-white px-2 text-blue-600 font-medium">Comparison Area</div>
+
+        <div className="flex flex-col xl:flex-row justify-center items-center xl:items-start gap-3">
           {/* Original image on the left */}
           <div className="space-y-1">
-            <h3 className="font-medium">Low-quality OCT Image:</h3>
+            <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
             <div
               className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
               onClick={() => handleViewFullImage(null)}
@@ -239,7 +251,7 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
 
           {/* Selected model image on the right */}
           <div className="space-y-1" onDragOver={(e) => e.preventDefault()} onDrop={handleDropToComparison}>
-            <h3 className="font-medium">
+            <h3 className="font-medium text-sm">
               {selectedModel
                 ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
                 : "Drag an image here to compare:"}
@@ -285,12 +297,23 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
         </div>
       </div>
 
-      {/* Model ranking area at the bottom - with added margin-top */}
-      <div className="space-y-1 mt-6 w-full">
-        <h3 className="font-medium">Rank AI-generated Enhanced Images:</h3>
-        <p className="text-sm text-gray-500 mb-2">
-          Drag images to reorder from best (left) to worst (right). Click any image to view it in the comparison area.
-        </p>
+      {/* Model ranking area - more compact with less vertical space */}
+      <div className="space-y-1 mt-2 w-full">
+        <div className="flex justify-between items-center">
+          <h3 className="font-medium text-base">Rank AI-generated Enhanced Images:</h3>
+          {/* Submit button moved to the right side to save vertical space */}
+          <Button onClick={handleSubmit} size="sm">
+            Submit Ranking
+          </Button>
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-md p-2 mb-2">
+          <p className="text-amber-800 font-medium text-sm">
+            Drag images to reorder from best (left) to worst (right). Click any image to view it in the comparison area
+            above.
+          </p>
+        </div>
+
         <div className="flex flex-wrap gap-2 justify-center">
           {modelRanking.map((model, index) => {
             const borderColorClass = getBorderColorClass(index)
@@ -312,7 +335,7 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
                   setDragOverIndex(null)
                 }}
               >
-                <div className={cn("p-1 text-center text-xs font-medium rounded-t-md", bgColorClass, textColorClass)}>
+                <div className={cn("p-1 text-center font-medium rounded-t-md text-base", bgColorClass, textColorClass)}>
                   Rank {index + 1}
                 </div>
                 <div
@@ -342,11 +365,6 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
             )
           })}
         </div>
-      </div>
-
-      {/* Submit button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSubmit}>Submit Ranking</Button>
       </div>
 
       {/* Full-size image viewer */}

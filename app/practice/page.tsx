@@ -54,20 +54,15 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="w-full px-4 py-6">
-      <Card className="modern-card mb-4 w-full max-w-none">
-        <CardHeader className="pb-1 px-6 modern-header">
+    <div className="w-full px-4 py-3">
+      <Card className="modern-card mb-2 w-full max-w-none">
+        <CardHeader className="pb-0 px-4 modern-header">
           <CardTitle className="text-xl font-bold">
             <span className="gradient-text">Practice Question</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-4 px-6">
-          <div className="space-y-4">
-            <p className="text-sm text-gray-500">
-              Click or drag an AI-enhanced image to compare it with the low-quality original. Rank the enhanced images
-              from best (leftmost) to worst (rightmost) by dragging them into order.
-            </p>
-
+        <CardContent className="pt-2 px-4">
+          <div className="space-y-2">
             <ImageComparisonRanking
               inputImage={practiceImage}
               models={models}

@@ -427,74 +427,80 @@ export default function TestPage() {
 
   return (
     <div className="w-full px-0 py-1 mx-auto">
-      <Card className="modern-card mb-2 w-full max-w-none rounded-none">
-        <CardHeader className="pb-1 pt-2 px-4 modern-header">
-          <CardTitle className="flex items-center justify-between text-lg">
-            <span className="gradient-text">
-              Question {currentImageIndex + 1} of {testSequence.length}
-            </span>
-            <span className="text-sm font-normal text-gray-500">Progress: {Math.round(progress)}%</span>
-          </CardTitle>
+      <Card className="modern-card mb-1 w-full max-w-none rounded-none">
+        <CardHeader className="pb-0 pt-2 px-4 modern-header">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between text-lg">
+              <span className="gradient-text">
+                Question {currentImageIndex + 1} of {testSequence.length}
+              </span>
+              <span className="text-sm font-normal text-gray-500">Progress: {Math.round(progress)}%</span>
+            </CardTitle>
+
+            {/* Question navigation - moved to header to save vertical space */}
+            <div className="flex flex-wrap gap-1 ml-4">
+              {testSequence.map((_, index) => (
+                <Button
+                  key={index}
+                  variant={index === currentImageIndex ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    index === currentImageIndex ? "question-button-active" : "question-button",
+                    completedQuestions.has(index) ? "question-button-completed" : "",
+                    "h-7 min-w-7 px-1.5", // Smaller buttons
+                  )}
+                  onClick={() => navigateToQuestion(index)}
+                >
+                  {index + 1}
+                  {completedQuestions.has(index) && <span className="ml-1 text-green-500">✓</span>}
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="pt-2 space-y-2 px-4">
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+        <CardContent className="pt-2 space-y-1 px-4">
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-1">
             <div className="progress-bar h-full" style={{ width: `${progress}%` }}></div>
           </div>
 
-          {supabaseError && (
-            <Alert variant="destructive" className="mb-1 py-1 bg-red-50 border-red-200">
-              <div className="flex justify-between items-center w-full">
+          {/* Alerts in a row to save vertical space */}
+          <div className="flex flex-wrap gap-1 mb-1">
+            {supabaseError && (
+              <Alert variant="destructive" className="py-1 bg-red-50 border-red-200 flex-1 min-w-[300px]">
+                <div className="flex justify-between items-center w-full">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
+                    <AlertDescription className="text-red-700 text-xs">
+                      {supabaseError.includes("environment variables")
+                        ? "Database connection not configured. Your answers will be saved locally."
+                        : "There was an error connecting to the database. Your answers will be saved locally."}
+                    </AlertDescription>
+                  </div>
+                  {!supabaseError.includes("environment variables") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={retrySupabaseConnection}
+                      disabled={retryingConnection}
+                      className="ml-2 min-w-[60px] h-6 border-red-200 text-red-700 hover:bg-red-50"
+                    >
+                      {retryingConnection ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Retry"}
+                    </Button>
+                  )}
+                </div>
+              </Alert>
+            )}
+
+            {hasSubmittedInSession() && (
+              <Alert variant="warning" className="py-1 bg-amber-50 border-amber-200 flex-1 min-w-[300px]">
                 <div className="flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-                  <AlertDescription className="text-red-700">
-                    {supabaseError.includes("environment variables")
-                      ? "Database connection not configured. Your answers will be saved locally."
-                      : "There was an error connecting to the database. Your answers will be saved locally."}
+                  <Lock className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
+                  <AlertDescription className="text-xs text-amber-700">
+                    You have already submitted your results. You can review your answers, but cannot submit again.
                   </AlertDescription>
                 </div>
-                {!supabaseError.includes("environment variables") && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={retrySupabaseConnection}
-                    disabled={retryingConnection}
-                    className="ml-2 min-w-[80px] border-red-200 text-red-700 hover:bg-red-50"
-                  >
-                    {retryingConnection ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Retry"}
-                  </Button>
-                )}
-              </div>
-            </Alert>
-          )}
-
-          {hasSubmittedInSession() && (
-            <Alert variant="warning" className="mb-1 py-1 bg-amber-50 border-amber-200">
-              <div className="flex items-center">
-                <Lock className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
-                <AlertDescription className="text-sm text-amber-700">
-                  You have already submitted your results. You can review your answers, but cannot submit again.
-                </AlertDescription>
-              </div>
-            </Alert>
-          )}
-
-          {/* Question navigation */}
-          <div className="mb-2 flex flex-wrap gap-1">
-            {testSequence.map((_, index) => (
-              <Button
-                key={index}
-                variant={index === currentImageIndex ? "default" : "outline"}
-                size="sm"
-                className={cn(
-                  index === currentImageIndex ? "question-button-active" : "question-button",
-                  completedQuestions.has(index) ? "question-button-completed" : "",
-                )}
-                onClick={() => navigateToQuestion(index)}
-              >
-                {index + 1}
-                {completedQuestions.has(index) && <span className="ml-1 text-green-500">✓</span>}
-              </Button>
-            ))}
+              </Alert>
+            )}
           </div>
 
           {/* Image comparison and ranking */}
