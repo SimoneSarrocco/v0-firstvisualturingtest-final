@@ -10,7 +10,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { ImageComparisonRanking } from "@/components/image-comparison-ranking"
-import { Download, AlertCircle, Mail, Lock, CheckCircle, RefreshCw } from "lucide-react"
+import { Download, AlertCircle, Mail, Lock, CheckCircle, RefreshCw, Pencil } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { formatRankingsForExport, createCSV, downloadCSV } from "@/lib/export-utils"
 import {
@@ -76,11 +76,17 @@ export default function TestPage() {
   const [clinicianId, setClinicianId] = useState("")
   const [clinicianData, setClinicianData] = useState({})
   const [completedQuestions, setCompletedQuestions] = useState(new Set())
+  // New state to track modified questions that haven't been saved
+  const [modifiedQuestions, setModifiedQuestions] = useState(new Set())
   const [supabaseError, setSupabaseError] = useState(null)
   const [isMounted, setIsMounted] = useState(false)
   const [showSavedIndicator, setShowSavedIndicator] = useState(false)
   const [retryingConnection, setRetryingConnection] = useState(false)
   const savedIndicatorTimeoutRef = useRef(null)
+  // Track current ranking for comparison
+  const [currentRanking, setCurrentRanking] = useState(null)
+  // Add a key to force re-render of the component
+  const [rankingKey, setRankingKey] = useState(0)
 
   // Initialize test sequence on component mount
   const initializeTest = useCallback(async () => {
@@ -143,6 +149,16 @@ export default function TestPage() {
         }
       }
 
+      // Try to load saved rankings from localStorage
+      try {
+        const savedRankings = localStorage.getItem("oct_rankings")
+        if (savedRankings) {
+          setRankings(JSON.parse(savedRankings))
+        }
+      } catch (error) {
+        console.error("Error loading saved rankings:", error)
+      }
+
       setLoading(false)
     }
   }, [router])
@@ -159,7 +175,35 @@ export default function TestPage() {
     }
   }, [initializeTest])
 
+  // Update current ranking when changing questions
+  useEffect(() => {
+    if (testSequence.length > 0) {
+      const currentImage = testSequence[currentImageIndex]
+      const savedRanking = rankings[currentImage] || null
+      setCurrentRanking(savedRanking ? [...savedRanking] : null)
+
+      // Force re-render of the component when changing questions
+      setRankingKey((prev) => prev + 1)
+    }
+  }, [currentImageIndex, rankings, testSequence])
+
+  // Save rankings to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(rankings).length > 0) {
+      try {
+        localStorage.setItem("oct_rankings", JSON.stringify(rankings))
+      } catch (error) {
+        console.error("Error saving rankings to localStorage:", error)
+      }
+    }
+  }, [rankings])
+
+  // Get the current image from the sequence
   const currentImage = testSequence[currentImageIndex]
+
+  // Get the saved ranking for the current image
+  const currentSavedRanking = rankings[currentImage] || null
+
   const progress = testSequence.length > 0 ? (completedQuestions.size / testSequence.length) * 100 : 0
 
   // Retry Supabase connection
@@ -204,7 +248,42 @@ export default function TestPage() {
 
   // Navigate to a specific question
   const navigateToQuestion = (index) => {
+    // Check if current question has unsaved changes
+    if (modifiedQuestions.has(currentImageIndex)) {
+      const confirmNavigation = window.confirm(
+        "You have unsaved changes to this question. Navigate away without saving?",
+      )
+      if (!confirmNavigation) {
+        return
+      }
+    }
+
     setCurrentImageIndex(index)
+  }
+
+  // Check if ranking has changed
+  const hasRankingChanged = (newRanking) => {
+    if (!currentRanking) return true
+    if (newRanking.length !== currentRanking.length) return true
+
+    for (let i = 0; i < newRanking.length; i++) {
+      if (newRanking[i] !== currentRanking[i]) return true
+    }
+
+    return false
+  }
+
+  // Handle ranking changes (without submitting)
+  const handleRankingChange = (modelOrder) => {
+    if (hasRankingChanged(modelOrder)) {
+      // Mark this question as modified
+      const newModified = new Set(modifiedQuestions)
+      newModified.add(currentImageIndex)
+      setModifiedQuestions(newModified)
+
+      // Update current ranking for comparison
+      setCurrentRanking([...modelOrder])
+    }
   }
 
   // Handle ranking submission for current image
@@ -229,6 +308,14 @@ export default function TestPage() {
     const newCompleted = new Set(completedQuestions)
     newCompleted.add(currentImageIndex)
     setCompletedQuestions(newCompleted)
+
+    // Remove from modified questions since it's now saved
+    const newModified = new Set(modifiedQuestions)
+    newModified.delete(currentImageIndex)
+    setModifiedQuestions(newModified)
+
+    // Update current ranking for comparison
+    setCurrentRanking([...modelOrder])
 
     // Show saved indicator
     setShowSavedIndicator(true)
@@ -266,6 +353,17 @@ export default function TestPage() {
         title: "Incomplete evaluation",
         description: `Please answer all ${testSequence.length} questions before submitting.`,
         variant: "destructive",
+      })
+      setShowCompletionDialog(false)
+      return
+    }
+
+    // Check if there are any unsaved changes
+    if (modifiedQuestions.size > 0) {
+      toast({
+        title: "Unsaved changes",
+        description: `You have unsaved changes to ${modifiedQuestions.size} question(s). Please save them before submitting.`,
+        variant: "warning",
       })
       setShowCompletionDialog(false)
       return
@@ -372,6 +470,16 @@ export default function TestPage() {
   // Export data as CSV
   const exportDataAsCSV = () => {
     try {
+      // Check if there are any unsaved changes
+      if (modifiedQuestions.size > 0) {
+        toast({
+          title: "Unsaved changes",
+          description: `You have unsaved changes to ${modifiedQuestions.size} question(s). Please save them before exporting.`,
+          variant: "warning",
+        })
+        return
+      }
+
       // Format the data for export - combine clinician and ranking data
       const formattedData = formatRankingsForExport(rankings, modelSequences, clinicianId, clinicianData)
 
@@ -405,6 +513,20 @@ export default function TestPage() {
         variant: "destructive",
       })
     }
+  }
+
+  // Get question status icon/indicator
+  const getQuestionStatusIndicator = (index) => {
+    if (modifiedQuestions.has(index)) {
+      return (
+        <span className="ml-1 text-amber-500">
+          <Pencil className="h-3 w-3 inline" />
+        </span>
+      )
+    } else if (completedQuestions.has(index)) {
+      return <span className="ml-1 text-green-500">✓</span>
+    }
+    return null
   }
 
   // Don't render anything during SSR
@@ -446,13 +568,14 @@ export default function TestPage() {
                   size="sm"
                   className={cn(
                     index === currentImageIndex ? "question-button-active" : "question-button",
+                    modifiedQuestions.has(index) ? "question-button-modified" : "",
                     completedQuestions.has(index) ? "question-button-completed" : "",
                     "h-7 min-w-7 px-1.5", // Smaller buttons
                   )}
                   onClick={() => navigateToQuestion(index)}
                 >
                   {index + 1}
-                  {completedQuestions.has(index) && <span className="ml-1 text-green-500">✓</span>}
+                  {getQuestionStatusIndicator(index)}
                 </Button>
               ))}
             </div>
@@ -501,15 +624,28 @@ export default function TestPage() {
                 </div>
               </Alert>
             )}
+
+            {modifiedQuestions.has(currentImageIndex) && (
+              <Alert className="py-1 bg-amber-50 border-amber-200 flex-1 min-w-[300px]">
+                <div className="flex items-center">
+                  <Pencil className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
+                  <AlertDescription className="text-xs text-amber-700">
+                    You have unsaved changes to this question. Click "Submit Ranking" to save your changes.
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
           </div>
 
           {/* Image comparison and ranking */}
           {currentImage && (
             <ImageComparisonRanking
+              key={`ranking-${currentImage}-${rankingKey}`}
               inputImage={currentImage}
               models={models}
               onSubmit={handleRankingSubmit}
-              initialRanking={rankings[currentImage] || null}
+              onChange={handleRankingChange}
+              initialRanking={currentSavedRanking}
             />
           )}
 
@@ -531,6 +667,17 @@ export default function TestPage() {
             <p className="text-sm text-gray-600">
               You have ranked all the images. Would you like to submit your evaluation now?
             </p>
+            {modifiedQuestions.size > 0 && (
+              <Alert variant="warning" className="mt-4 py-2 bg-amber-50 border-amber-200">
+                <div className="flex items-center">
+                  <Pencil className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
+                  <AlertDescription className="text-xs text-amber-700">
+                    You have unsaved changes to {modifiedQuestions.size} question(s). Please save them before
+                    submitting.
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
           </div>
           <div className="flex justify-end space-x-2 mt-4">
             <Button
@@ -542,7 +689,7 @@ export default function TestPage() {
             </Button>
             <Button
               onClick={submitAllRankings}
-              disabled={submitting || hasSubmittedInSession()}
+              disabled={submitting || hasSubmittedInSession() || modifiedQuestions.size > 0}
               className="button-gradient"
             >
               {submitting ? "Submitting..." : "Submit Evaluation"}
@@ -565,6 +712,16 @@ export default function TestPage() {
               <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
               <AlertDescription className="text-xs text-red-700">Error: {supabaseError}</AlertDescription>
             </Alert>
+            {modifiedQuestions.size > 0 && (
+              <Alert variant="warning" className="mb-4 py-2 bg-amber-50 border-amber-200">
+                <div className="flex items-center">
+                  <Pencil className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
+                  <AlertDescription className="text-xs text-amber-700">
+                    You have unsaved changes to {modifiedQuestions.size} question(s). Please save them before exporting.
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
             <p className="text-sm mb-2 text-gray-600">
               You can export your results as a CSV file, which you can then send to the researchers or upload later.
             </p>
@@ -594,7 +751,7 @@ export default function TestPage() {
             >
               Go Back
             </Button>
-            <Button onClick={exportDataAsCSV} className="button-gradient">
+            <Button onClick={exportDataAsCSV} className="button-gradient" disabled={modifiedQuestions.size > 0}>
               <Download className="mr-2 h-4 w-4" />
               Export Results as CSV
             </Button>

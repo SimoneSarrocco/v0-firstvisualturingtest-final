@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ZoomIn } from "lucide-react"
@@ -67,10 +67,17 @@ interface ImageComparisonRankingProps {
   inputImage: number
   models: string[]
   onSubmit: (ranking: string[]) => void
+  onChange?: (ranking: string[]) => void
   initialRanking?: string[] | null
 }
 
-export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRanking }: ImageComparisonRankingProps) {
+export function ImageComparisonRanking({
+  inputImage,
+  models,
+  onSubmit,
+  onChange,
+  initialRanking,
+}: ImageComparisonRankingProps) {
   // State for model order/ranking
   const [modelRanking, setModelRanking] = useState<string[]>([])
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
@@ -78,41 +85,68 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [fullSizeImage, setFullSizeImage] = useState<{ src: string; alt: string } | null>(null)
   const [isMounted, setIsMounted] = useState(false)
-  // Store the initial order to keep track of original letters
-  const [initialOrder, setInitialOrder] = useState<string[]>([])
-  // Map to store the letter for each model
+
+  // Map to store the letter for each model - this is crucial for preserving letters
   const [modelLetters, setModelLetters] = useState<Record<string, string>>({})
+
+  // Track the question id to reset when question changes
+  const lastInputImageRef = useRef<number | null>(null)
+  const initialRankingRef = useRef<string[] | null>(null)
+  const isInitializedRef = useRef(false)
 
   // Check if we're on client-side
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
+  // Reset when question changes or initialRanking changes
+  useEffect(() => {
+    if (
+      lastInputImageRef.current !== inputImage ||
+      JSON.stringify(initialRankingRef.current) !== JSON.stringify(initialRanking)
+    ) {
+      lastInputImageRef.current = inputImage
+      initialRankingRef.current = initialRanking ? [...initialRanking] : null
+      isInitializedRef.current = false
+    }
+  }, [inputImage, initialRanking])
+
   // Initialize model ranking and letters
   useEffect(() => {
-    let newRanking = []
+    if (!isInitializedRef.current) {
+      let newRanking: string[] = []
+      const letters: Record<string, string> = {}
 
-    // If initial ranking provided, use it
-    if (initialRanking && initialRanking.length === models.length) {
-      newRanking = [...initialRanking]
-    } else {
-      // Otherwise randomize
-      newRanking = [...models].sort(() => 0.5 - Math.random())
-    }
+      // If initial ranking provided, use it exactly as is
+      if (initialRanking && initialRanking.length === models.length) {
+        // For previously answered questions, use the exact saved ranking
+        newRanking = [...initialRanking]
 
-    setModelRanking(newRanking)
-    setInitialOrder([...newRanking])
+        // For previously answered questions, we need to assign letters based on position
+        // This ensures the letters are preserved exactly as they were when submitted
+        newRanking.forEach((model, index) => {
+          letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
+        })
+      } else {
+        // For new questions, create a randomized ranking
+        newRanking = [...models].sort(() => 0.5 - Math.random())
 
-    // Assign letters A-E to models based on initial position
-    const letters: Record<string, string> = {}
-    newRanking.forEach((model, index) => {
-      letters[model] = String.fromCharCode(65 + index) // A, B, C, etc.
-    })
-    setModelLetters(letters)
+        // For new questions, assign letters A-E in order from left to right
+        // This ensures the letters are always A-B-C-D-E from left to right
+        newRanking.forEach((model, index) => {
+          letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
+        })
+      }
 
-    // Set the first model as selected by default
-    if (newRanking.length > 0) {
-      setSelectedModel(newRanking[0])
+      setModelRanking(newRanking)
+      setModelLetters(letters)
+
+      // Set the first model as selected by default
+      if (newRanking.length > 0) {
+        setSelectedModel(newRanking[0])
+      }
+
+      isInitializedRef.current = true
     }
   }, [inputImage, models, initialRanking])
 
@@ -172,6 +206,18 @@ export function ImageComparisonRanking({ inputImage, models, onSubmit, initialRa
         newRanking.splice(draggedIndex, 1)
         newRanking.splice(index, 0, draggedModel)
         setModelRanking(newRanking)
+
+        // Update the letters to maintain A-B-C-D-E from left to right
+        const newLetters = { ...modelLetters }
+        newRanking.forEach((model, idx) => {
+          newLetters[model] = String.fromCharCode(65 + idx) // A, B, C, D, E
+        })
+        setModelLetters(newLetters)
+
+        // Notify parent of ranking change
+        if (onChange) {
+          onChange(newRanking)
+        }
       }
       setDraggedModel(null)
       setDragOverIndex(null)
