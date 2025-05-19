@@ -193,7 +193,7 @@ export function ImageComparisonRanking({
   const getImageFilename = (model: string | null): string => {
     if (model === null) {
       // Input image
-      return `${inputImage}.jpg`
+      return `${inputImage}.png`
     } else if (model === "BBDM") {
       // BBDM uses x_{index}_0.png format (0-indexed)
       return `x_${inputImage - 1}_0.png`
@@ -294,9 +294,18 @@ export function ImageComparisonRanking({
       {/* Instructions - Made more prominent but compact */}
       <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-1">
         <ul className="text-blue-800 font-medium text-sm list-disc list-inside space-y-1">
-          <li>Click or drag an AI-enhanced image (from the section below) into the right side of the "Comparison Area" to compare it side-by-side with the low-quality OCT image in their native resolution.</li>
-          <li>To compare two enhanced images in full resolution, click back and forth between the ones you want to compare (from the section below) to spot any differences.</li>
-          <li>Rank the enhanced images from best (leftmost) to worst (rightmost), based on which ones you think are the best enhanced versions of the low-quality image, by dragging them into order in the section below.</li>
+          <li>
+            Click or drag an AI-enhanced image (from the section below) into the right side of the "Comparison Area" to
+            compare it side-by-side with the low-quality OCT image in their native resolution.
+          </li>
+          <li>
+            To compare two enhanced images in full resolution, click back and forth between the ones you want to compare
+            (from the section below) to spot any differences.
+          </li>
+          <li>
+            Rank the enhanced images from best (leftmost) to worst (rightmost), based on which ones you think are the
+            best enhanced versions of the low-quality image, by dragging them into order in the section below.
+          </li>
         </ul>
       </div>
 
@@ -396,7 +405,9 @@ export function ImageComparisonRanking({
 
         <div className="bg-amber-50 border border-amber-200 rounded-md p-2 mb-2">
           <p className="text-amber-800 font-medium text-sm">
-            Drag images to reorder from best (left) to worst (right). Click any image to view it in the Comparison Area above. If you are using a touchscreen, just click on the letters of the pair of images you want to swap instead of drag-and-drop.
+            Drag images to reorder from best (left) to worst (right). Click any image to view it in the Comparison Area
+            above. If you are using a touchscreen, just click on the letters of the pair of images you want to swap
+            instead of drag-and-drop.
           </p>
         </div>
 

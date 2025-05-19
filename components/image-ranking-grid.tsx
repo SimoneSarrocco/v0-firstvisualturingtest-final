@@ -111,7 +111,7 @@ export function ImageRankingGrid({ inputImage, models, onSubmit, initialRanking 
   const getImageFilename = (model: string | null): string => {
     if (model === null) {
       // Input image
-      return `${inputImage}.jpg`
+      return `${inputImage}.png`
     } else if (model === "BBDM") {
       // BBDM uses x_{index}_0.png format (0-indexed)
       return `x_${inputImage - 1}_0.png`

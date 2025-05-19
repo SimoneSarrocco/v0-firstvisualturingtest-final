@@ -38,7 +38,7 @@ export function SynchronizedMagnifier({ inputImage, models, onlyOriginal = false
   const getImageSrc = (model: string | null): string => {
     if (model === null) {
       // Input image
-      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/${inputImage}.jpg`
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/${inputImage}.png`
     } else {
       // Model image
       const filename = getImageFilename(model)
