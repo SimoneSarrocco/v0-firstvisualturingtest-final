@@ -79,9 +79,10 @@ const getRandomOrder = (array: string[], seed: number): string[] => {
 interface ImageComparisonRankingProps {
   inputImage: number
   models: string[]
-  onSubmit: (ranking: string[]) => void
+  onSubmit: (ranking: string[], originalSequence: string[]) => void
   onChange?: (ranking: string[]) => void
   initialRanking?: string[] | null
+  initialSequence?: string[] | null
 }
 
 export function ImageComparisonRanking({
@@ -90,6 +91,7 @@ export function ImageComparisonRanking({
   onSubmit,
   onChange,
   initialRanking,
+  initialSequence,
 }: ImageComparisonRankingProps) {
   // State for model order/ranking
   const [modelRanking, setModelRanking] = useState<string[]>([])
@@ -99,12 +101,16 @@ export function ImageComparisonRanking({
   const [fullSizeImage, setFullSizeImage] = useState<{ src: string; alt: string } | null>(null)
   const [isMounted, setIsMounted] = useState(false)
 
-  // Map to store the letter for each model - this is crucial for preserving letters
+  // Store the original sequence of models for this question
+  const [originalSequence, setOriginalSequence] = useState<string[]>([])
+
+  // Map to store the letter for each model
   const [modelLetters, setModelLetters] = useState<Record<string, string>>({})
 
   // Track the question id to reset when question changes
   const lastInputImageRef = useRef<number | null>(null)
   const initialRankingRef = useRef<string[] | null>(null)
+  const initialSequenceRef = useRef<string[] | null>(null)
   const isInitializedRef = useRef(false)
 
   // Check if we're on client-side
@@ -116,26 +122,36 @@ export function ImageComparisonRanking({
   useEffect(() => {
     if (
       lastInputImageRef.current !== inputImage ||
-      JSON.stringify(initialRankingRef.current) !== JSON.stringify(initialRanking)
+      JSON.stringify(initialRankingRef.current) !== JSON.stringify(initialRanking) ||
+      JSON.stringify(initialSequenceRef.current) !== JSON.stringify(initialSequence)
     ) {
       lastInputImageRef.current = inputImage
       initialRankingRef.current = initialRanking ? [...initialRanking] : null
+      initialSequenceRef.current = initialSequence ? [...initialSequence] : null
       isInitializedRef.current = false
     }
-  }, [inputImage, initialRanking])
+  }, [inputImage, initialRanking, initialSequence])
 
   // Initialize model ranking and letters
   useEffect(() => {
     if (!isInitializedRef.current) {
-      // Generate a deterministic random order for this question
-      // Use the inputImage as a seed to ensure the same order for the same question
-      const seed = inputImage * 9301 + 49297
-      const randomOrder = getRandomOrder(models, seed)
+      let sequence: string[]
 
-      // Assign letters A-E to models based on their position in the original random order
-      // This ensures letters are fixed to models for this question
+      // If we have a saved original sequence, use it
+      if (initialSequence && initialSequence.length === models.length) {
+        sequence = [...initialSequence]
+      } else {
+        // Otherwise generate a deterministic random order for this question
+        const seed = inputImage * 9301 + 49297
+        sequence = getRandomOrder(models, seed)
+      }
+
+      // Store the original sequence
+      setOriginalSequence(sequence)
+
+      // Assign letters A-E to models based on their position in the original sequence
       const letters: Record<string, string> = {}
-      randomOrder.forEach((model, index) => {
+      sequence.forEach((model, index) => {
         letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
       })
       setModelLetters(letters)
@@ -144,16 +160,16 @@ export function ImageComparisonRanking({
       if (initialRanking && initialRanking.length === models.length) {
         setModelRanking([...initialRanking])
       } else {
-        // Otherwise use the random order
-        setModelRanking([...randomOrder])
+        // Otherwise use the original sequence as the initial ranking
+        setModelRanking([...sequence])
       }
 
       // Set the first model as selected by default
-      setSelectedModel(initialRanking ? initialRanking[0] : randomOrder[0])
+      setSelectedModel(initialRanking ? initialRanking[0] : sequence[0])
 
       isInitializedRef.current = true
     }
-  }, [inputImage, models, initialRanking])
+  }, [inputImage, models, initialRanking, initialSequence])
 
   // Get the correct image filename based on model and image number
   const getImageFilename = (model: string | null): string => {
@@ -200,7 +216,7 @@ export function ImageComparisonRanking({
     }
   }
 
-  // Handle drop to reorder - FIXED to use direct swap
+  // Handle drop to reorder - using direct swap
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault()
 
@@ -245,9 +261,9 @@ export function ImageComparisonRanking({
     })
   }
 
-  // Handle submission
+  // Handle submission - pass both the ranking and original sequence
   const handleSubmit = () => {
-    onSubmit(modelRanking)
+    onSubmit(modelRanking, originalSequence)
   }
 
   // Don't render anything during SSR

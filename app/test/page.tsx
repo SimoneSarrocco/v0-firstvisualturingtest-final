@@ -62,6 +62,19 @@ const generateTestSequence = () => {
   return sequence
 }
 
+// Generate a deterministic random order based on a seed
+const getRandomOrder = (array, seed) => {
+  const newArray = [...array]
+  // Simple deterministic shuffle algorithm
+  for (let i = newArray.length - 1; i > 0; i--) {
+    // Use a deterministic random number based on seed and current index
+    const seededRandom = ((seed * (i + 1)) % 233280) / 233280
+    const j = Math.floor(seededRandom * (i + 1))
+    ;[newArray[i], newArray[j]] = [newArray[j], newArray[i]]
+  }
+  return newArray
+}
+
 export default function TestPage() {
   const router = useRouter()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -125,12 +138,15 @@ export default function TestPage() {
       const sequence = generateTestSequence()
       setTestSequence(sequence)
 
-      // Try to load saved rankings from localStorage
+      // Try to load saved rankings and sequences from localStorage
       try {
         const savedRankings = localStorage.getItem("oct_rankings")
-        if (savedRankings) {
+        const savedSequences = localStorage.getItem("oct_model_sequences")
+
+        if (savedRankings && savedSequences) {
           try {
             const parsedRankings = JSON.parse(savedRankings)
+            const parsedSequences = JSON.parse(savedSequences)
 
             // Validate the rankings - check if they match our current test sequence
             let validRankings = false
@@ -143,6 +159,7 @@ export default function TestPage() {
 
             if (validRankings) {
               setRankings(parsedRankings)
+              setModelSequences(parsedSequences)
 
               // Mark questions as completed if they have rankings
               const newCompleted = new Set()
@@ -156,23 +173,29 @@ export default function TestPage() {
               // If rankings don't match our sequence, clear them
               console.log("Saved rankings don't match current test sequence, starting fresh")
               localStorage.removeItem("oct_rankings")
+              localStorage.removeItem("oct_model_sequences")
               setRankings({})
+              setModelSequences({})
               setCompletedQuestions(new Set())
             }
           } catch (error) {
-            console.error("Error parsing saved rankings:", error)
+            console.error("Error parsing saved data:", error)
             localStorage.removeItem("oct_rankings")
+            localStorage.removeItem("oct_model_sequences")
             setRankings({})
+            setModelSequences({})
             setCompletedQuestions(new Set())
           }
         } else {
           // No saved rankings found
           setRankings({})
+          setModelSequences({})
           setCompletedQuestions(new Set())
         }
       } catch (error) {
-        console.error("Error loading saved rankings:", error)
+        console.error("Error loading saved data:", error)
         setRankings({})
+        setModelSequences({})
         setCompletedQuestions(new Set())
       }
 
@@ -233,13 +256,39 @@ export default function TestPage() {
     }
   }, [rankings])
 
+  // Save model sequences to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(modelSequences).length > 0) {
+      try {
+        localStorage.setItem("oct_model_sequences", JSON.stringify(modelSequences))
+      } catch (error) {
+        console.error("Error saving model sequences to localStorage:", error)
+      }
+    }
+  }, [modelSequences])
+
   // Get the current image from the sequence
   const currentImage = testSequence[currentImageIndex]
 
   // Get the saved ranking for the current image
   const currentSavedRanking = rankings[currentImage] || null
 
+  // Get the original model sequence for the current image
+  const currentModelSequence = modelSequences[currentImage] || null
+
   const progress = testSequence.length > 0 ? (completedQuestions.size / testSequence.length) * 100 : 0
+
+  // Generate the original model sequence for a question if it doesn't exist
+  const getOriginalModelSequence = (imageId) => {
+    // If we already have a stored sequence for this image, use it
+    if (modelSequences[imageId]) {
+      return modelSequences[imageId]
+    }
+
+    // Otherwise, generate a deterministic random order based on the image ID
+    const seed = imageId * 9301 + 49297
+    return getRandomOrder([...models], seed)
+  }
 
   // Retry Supabase connection
   const retrySupabaseConnection = async () => {
@@ -322,21 +371,20 @@ export default function TestPage() {
   }
 
   // Handle ranking submission for current image
-  const handleRankingSubmit = (modelOrder) => {
-    // Store both the rankings and the original model sequence for this image
+  const handleRankingSubmit = (modelOrder, originalSequence) => {
+    // Store the final ranking (what the user submitted)
     const newRankings = {
       ...rankings,
       [currentImage]: modelOrder,
     }
-
     setRankings(newRankings)
 
-    // Store the model sequence that was shown to the user
+    // Store the original model sequence that was shown to the user
+    // This is crucial - we need to know the original order to interpret the ranking
     const newModelSequences = {
       ...modelSequences,
-      [currentImage]: modelOrder,
+      [currentImage]: originalSequence || getOriginalModelSequence(currentImage),
     }
-
     setModelSequences(newModelSequences)
 
     // Mark this question as completed
@@ -553,11 +601,16 @@ export default function TestPage() {
   // Clear session data and restart test
   const clearSessionAndRestart = () => {
     if (window.confirm("This will clear all your current progress and restart the test. Are you sure?")) {
-      window.localStorage.clear()
+      localStorage.removeItem("oct_rankings")
+      localStorage.removeItem("oct_model_sequences")
+      sessionStorage.removeItem("oct_submission_timestamp")
+
       setRankings({})
+      setModelSequences({})
       setCompletedQuestions(new Set())
       setModifiedQuestions(new Set())
       setCurrentImageIndex(0)
+
       toast({
         title: "Test reset",
         description: "All progress has been cleared and the test has been restarted.",
@@ -707,6 +760,7 @@ export default function TestPage() {
               onSubmit={handleRankingSubmit}
               onChange={handleRankingChange}
               initialRanking={currentSavedRanking}
+              initialSequence={currentModelSequence}
             />
           )}
 
