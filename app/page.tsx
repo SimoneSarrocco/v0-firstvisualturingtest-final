@@ -20,7 +20,7 @@ export default function Home() {
             <CardHeader className="pb-2 bg-gray-50">
               <CardTitle className="text-xl text-center text-blue-600">About This Study</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-gray-700">
+            <CardContent className="space-y-3 text-justify text-gray-700">
               <p>
                 We have developed several deep learning models to enhance low-quality vitreous OCT images. Your clinical
                 expertise is invaluable in helping us determine which models produce the most clinically relevant
@@ -69,8 +69,9 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <div className="text-center text-sm text-gray-700 mt-2">
-                <p>On the left, the true low-quality OCT image (ART10) acquired with the Heidelberg OCT Spectralis. On the right, one of the enhanced versions obtained from one of our AI models.</p>
+              <div className="text-justify text-sm text-gray-700 mt-2">
+                <p>On the left, the true low-quality OCT image (ART10) acquired with the Heidelberg OCT Spectralis.</p>
+                <p>On the right, one of the enhanced versions obtained from one of our AI models.</p>
               </div>
             </CardContent>
           </Card>
