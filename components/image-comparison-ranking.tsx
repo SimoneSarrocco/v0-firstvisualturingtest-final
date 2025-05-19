@@ -396,8 +396,8 @@ export function ImageComparisonRanking({
 
         <div className="bg-amber-50 border border-amber-200 rounded-md p-2 mb-2">
           <p className="text-amber-800 font-medium text-sm">
-            Drag images to reorder from best (left) to worst (right). Click any image to view it in the comparison area
-            above.
+            Drag images to reorder from best (left) to worst (right). Click any image to view it in the Comparison Area
+            above. If you are using a touchscreen, just click on the letters of the pairs of images you want to swap instead of drag-and-drop.
           </p>
         </div>
 
