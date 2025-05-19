@@ -5,11 +5,9 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ZoomIn } from "lucide-react"
+import { ZoomIn, FlipVerticalIcon as SwapVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ImageViewer } from "./image-viewer"
-import { useDeviceType } from "@/hooks/use-device-type"
-import { MobileImageComparisonRanking } from "./mobile-image-comparison-ranking"
 
 // Helper function to get border color class based on rank position
 const getBorderColorClass = (position: number): string => {
@@ -78,7 +76,7 @@ const getRandomOrder = (array: string[], seed: number): string[] => {
   return newArray
 }
 
-interface ImageComparisonRankingProps {
+interface MobileImageComparisonRankingProps {
   inputImage: number
   models: string[]
   onSubmit: (ranking: string[], originalSequence: string[]) => void
@@ -87,21 +85,23 @@ interface ImageComparisonRankingProps {
   initialSequence?: string[] | null
 }
 
-export function ImageComparisonRanking({
+export function MobileImageComparisonRanking({
   inputImage,
   models,
   onSubmit,
   onChange,
   initialRanking,
   initialSequence,
-}: ImageComparisonRankingProps) {
+}: MobileImageComparisonRankingProps) {
   // State for model order/ranking
   const [modelRanking, setModelRanking] = useState<string[]>([])
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
-  const [draggedModel, setDraggedModel] = useState<string | null>(null)
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [fullSizeImage, setFullSizeImage] = useState<{ src: string; alt: string } | null>(null)
   const [isMounted, setIsMounted] = useState(false)
+
+  // State for swap functionality
+  const [swapSource, setSwapSource] = useState<number | null>(null)
+  const [swapMode, setSwapMode] = useState(false)
 
   // Store the original sequence of models for this question
   const [originalSequence, setOriginalSequence] = useState<string[]>([])
@@ -114,8 +114,6 @@ export function ImageComparisonRanking({
   const initialRankingRef = useRef<string[] | null>(null)
   const initialSequenceRef = useRef<string[] | null>(null)
   const isInitializedRef = useRef(false)
-
-  const { isMobile, isTablet, isTouchDevice } = useDeviceType()
 
   // Check if we're on client-side
   useEffect(() => {
@@ -175,20 +173,6 @@ export function ImageComparisonRanking({
     }
   }, [inputImage, models, initialRanking, initialSequence])
 
-  // Use mobile version for mobile devices or touch devices
-  if (isMobile || isTablet || isTouchDevice) {
-    return (
-      <MobileImageComparisonRanking
-        inputImage={inputImage}
-        models={models}
-        onSubmit={onSubmit}
-        onChange={onChange}
-        initialRanking={initialRanking}
-        initialSequence={initialSequence}
-      />
-    )
-  }
-
   // Get the correct image filename based on model and image number
   const getImageFilename = (model: string | null): string => {
     if (model === null) {
@@ -214,58 +198,7 @@ export function ImageComparisonRanking({
     }
   }
 
-  // Handle drag start
-  const handleDragStart = (model: string) => {
-    setDraggedModel(model)
-  }
-
-  // Handle drag over
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault()
-    setDragOverIndex(index)
-  }
-
-  // Handle drop to comparison area
-  const handleDropToComparison = (e: React.DragEvent) => {
-    e.preventDefault()
-    if (draggedModel) {
-      setSelectedModel(draggedModel)
-      setDraggedModel(null)
-    }
-  }
-
-  // Handle drop to reorder - using direct swap
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault()
-
-    if (draggedModel) {
-      const sourceIndex = modelRanking.indexOf(draggedModel)
-
-      if (sourceIndex !== -1 && sourceIndex !== targetIndex) {
-        // Create a new array with the same items
-        const newRanking = [...modelRanking]
-
-        // Get the model at the target position
-        const targetModel = newRanking[targetIndex]
-
-        // Perform a direct swap - this ensures only the two items change positions
-        newRanking[targetIndex] = draggedModel
-        newRanking[sourceIndex] = targetModel
-
-        setModelRanking(newRanking)
-
-        // Notify parent of ranking change
-        if (onChange) {
-          onChange(newRanking)
-        }
-      }
-
-      setDraggedModel(null)
-      setDragOverIndex(null)
-    }
-  }
-
-  // Handle click on model image
+  // Handle click on model image for comparison
   const handleModelClick = (model: string) => {
     setSelectedModel(model)
   }
@@ -277,6 +210,45 @@ export function ImageComparisonRanking({
       src: getImageSrc(model),
       alt: model ? `Enhanced Image ${modelLetters[model]}` : "Low-quality OCT image",
     })
+  }
+
+  // Handle click on letter label for swapping
+  const handleLetterClick = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering the parent click handler
+
+    if (swapMode) {
+      // If already in swap mode, perform the swap
+      if (swapSource !== null && swapSource !== index) {
+        const newRanking = [...modelRanking]
+        const temp = newRanking[swapSource]
+        newRanking[swapSource] = newRanking[index]
+        newRanking[index] = temp
+        setModelRanking(newRanking)
+
+        // Notify parent of ranking change
+        if (onChange) {
+          onChange(newRanking)
+        }
+
+        // Reset swap mode
+        setSwapSource(null)
+        setSwapMode(false)
+      } else {
+        // Clicked on the same item or no source selected
+        setSwapSource(null)
+        setSwapMode(false)
+      }
+    } else {
+      // Enter swap mode and set this as the source
+      setSwapSource(index)
+      setSwapMode(true)
+    }
+  }
+
+  // Cancel swap mode
+  const cancelSwap = () => {
+    setSwapSource(null)
+    setSwapMode(false)
   }
 
   // Handle submission - pass both the ranking and original sequence
@@ -294,9 +266,8 @@ export function ImageComparisonRanking({
       {/* Instructions - Made more prominent but compact */}
       <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-1">
         <p className="text-blue-800 font-medium text-sm">
-          Click or drag an AI-enhanced image to compare it with the low-quality original in full resolution
-          side-by-side. Rank the enhanced images from best (leftmost) to worst (rightmost) by dragging them into order
-          in the section below.
+          Tap an AI-enhanced image to compare it with the low-quality original. Rank the enhanced images from best (1)
+          to worst (5) by tapping the letter labels to swap their positions.
         </p>
       </div>
 
@@ -305,21 +276,20 @@ export function ImageComparisonRanking({
         {/* Comparison Area Label */}
         <div className="absolute -top-3 left-4 bg-white px-2 text-blue-600 font-medium">Comparison Area</div>
 
-        <div className="flex flex-col xl:flex-row justify-center items-center xl:items-start gap-3">
-          {/* Original image on the left */}
+        <div className="flex flex-col gap-3">
+          {/* Original image on the top */}
           <div className="space-y-1">
             <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
             <div
               className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
               onClick={() => handleViewFullImage(null)}
-              style={{ width: "768px", height: "496px" }}
+              style={{ width: "100%", height: "auto", aspectRatio: "1.55/1" }}
             >
               <Image
                 src={getImageSrc(null) || "/placeholder.svg"}
                 alt="Low-quality OCT image"
-                width={768}
-                height={496}
-                style={{ objectFit: "none" }}
+                fill
+                style={{ objectFit: "contain" }}
                 unoptimized
               />
               <Button
@@ -336,25 +306,24 @@ export function ImageComparisonRanking({
             </div>
           </div>
 
-          {/* Selected model image on the right */}
-          <div className="space-y-1" onDragOver={(e) => e.preventDefault()} onDrop={handleDropToComparison}>
+          {/* Selected model image on the bottom */}
+          <div className="space-y-1">
             <h3 className="font-medium text-sm">
               {selectedModel
                 ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
-                : "Drag an image here to compare:"}
+                : "Tap an image below to compare:"}
             </h3>
             {selectedModel ? (
               <div
                 className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
                 onClick={() => handleViewFullImage(selectedModel)}
-                style={{ width: "768px", height: "496px" }}
+                style={{ width: "100%", height: "auto", aspectRatio: "1.55/1" }}
               >
                 <Image
                   src={getImageSrc(selectedModel) || "/placeholder.svg"}
                   alt={`Enhanced Image ${modelLetters[selectedModel]}`}
-                  width={768}
-                  height={496}
-                  style={{ objectFit: "none" }}
+                  fill
+                  style={{ objectFit: "contain" }}
                   unoptimized
                 />
                 <div className="absolute top-1 left-1 bg-white/80 px-2 py-1 text-sm font-bold rounded">
@@ -375,82 +344,116 @@ export function ImageComparisonRanking({
             ) : (
               <div
                 className="flex items-center justify-center border border-dashed border-gray-300 rounded-md bg-gray-50"
-                style={{ width: "768px", height: "496px" }}
+                style={{ width: "100%", height: "200px" }}
               >
-                <p className="text-gray-500">Drag an image here to compare</p>
+                <p className="text-gray-500">Tap an image below to compare</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Model ranking area - more compact with less vertical space */}
+      {/* Swap mode indicator */}
+      {swapMode && (
+        <div className="bg-yellow-50 border border-yellow-300 rounded-md p-2 flex items-center justify-between">
+          <p className="text-yellow-800 font-medium text-sm">Now tap another letter to swap positions</p>
+          <Button variant="outline" size="sm" onClick={cancelSwap}>
+            Cancel
+          </Button>
+        </div>
+      )}
+
+      {/* Model ranking area - vertical list for mobile */}
       <div className="space-y-1 mt-2 w-full">
         <div className="flex justify-between items-center">
           <h3 className="font-medium text-base">Rank AI-generated Enhanced Images:</h3>
-          {/* Submit button moved to the right side to save vertical space */}
-          <Button onClick={handleSubmit} size="sm">
-            Submit Ranking
-          </Button>
         </div>
 
         <div className="bg-amber-50 border border-amber-200 rounded-md p-2 mb-2">
           <p className="text-amber-800 font-medium text-sm">
-            Drag images to reorder from best (left) to worst (right). Click any image to view it in the comparison area
-            above.
+            Tap any image to view it in the comparison area above. Tap one letter and then another to swap their
+            positions.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div className="flex flex-col gap-2">
           {modelRanking.map((model, index) => {
             const borderColorClass = getBorderColorClass(index)
             const bgColorClass = getBgColorClass(index)
             const textColorClass = getTextColorClass(index)
-            const isDragging = draggedModel === model
-            const isDragOver = dragOverIndex === index
             const letter = modelLetters[model] || "?"
+            const isSelected = swapSource === index
 
             return (
-              <div
-                key={model}
-                className="flex flex-col w-[calc(20%-8px)]"
-                draggable
-                onDragStart={() => handleDragStart(model)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDrop={(e) => handleDrop(e, index)}
-                onDragEnd={() => {
-                  setDraggedModel(null)
-                  setDragOverIndex(null)
-                }}
-              >
-                <div className={cn("p-1 text-center font-medium rounded-t-md text-base", bgColorClass, textColorClass)}>
+              <div key={model} className="flex flex-col w-full">
+                <div className={cn("p-1 text-center font-medium rounded-t-md", bgColorClass, textColorClass)}>
                   Rank {index + 1}
                 </div>
                 <div
                   className={cn(
-                    "relative border-2 rounded-b-md overflow-hidden cursor-pointer transition-all",
+                    "border-2 rounded-b-md overflow-hidden",
                     borderColorClass,
-                    isDragging ? "opacity-50" : "opacity-100",
-                    isDragOver ? "border-blue-500 border-dashed" : "",
-                    selectedModel === model ? "ring-4 ring-purple-500 ring-offset-1" : "",
+                    isSelected ? "ring-2 ring-purple-500" : "",
+                    swapMode && !isSelected ? "opacity-70" : "",
                   )}
-                  onClick={() => handleModelClick(model)}
                 >
-                  <div className="aspect-[1.55] relative">
-                    <Image
-                      src={getImageSrc(model) || "/placeholder.svg"}
-                      alt={`Enhanced Image ${letter}`}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
+                  <div className="flex items-center">
+                    {/* Image */}
+                    <div
+                      className={cn(
+                        "relative overflow-hidden flex-grow bg-white",
+                        selectedModel === model ? "ring-1 ring-inset ring-blue-400" : "",
+                      )}
+                      style={{ height: "120px" }}
+                      onClick={() => handleModelClick(model)}
+                    >
+                      <div className="w-full h-full flex items-center justify-center">
+                        <img
+                          src={getImageSrc(model) || "/placeholder.svg"}
+                          alt={`Enhanced Image ${letter}`}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+
+                      {/* Letter label - primary click target for swapping */}
+                      <div
+                        className={cn(
+                          "absolute top-1 left-1 px-2 py-1 text-sm font-bold rounded cursor-pointer transition-all",
+                          isSelected
+                            ? "bg-purple-500 text-white scale-110"
+                            : "bg-white/80 hover:bg-white hover:scale-105",
+                        )}
+                        onClick={(e) => handleLetterClick(index, e)}
+                      >
+                        {letter}
+                        {isSelected && <SwapVertical className="h-3 w-3 ml-1 inline" />}
+                      </div>
+
+                      {/* Zoom button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 bg-white/80 hover:bg-white"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleViewFullImage(model, e)
+                        }}
+                      >
+                        <ZoomIn className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="absolute top-1 left-1 bg-white/80 px-2 py-1 text-sm font-bold rounded">{letter}</div>
                 </div>
               </div>
             )
           })}
         </div>
+      </div>
+
+      <div className="flex justify-end pt-2">
+        <Button onClick={handleSubmit} className="w-full">
+          Submit Ranking
+        </Button>
       </div>
 
       {/* Full-size image viewer */}
