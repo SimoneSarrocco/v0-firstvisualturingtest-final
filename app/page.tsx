@@ -90,7 +90,7 @@ export default function Home() {
                 size="lg"
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium px-8 py-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-lg"
               >
-                Start Evaluation
+                Next
               </Button>
             </Link>
           </Suspense>
