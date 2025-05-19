@@ -23,6 +23,28 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
   }
 }
 
+// Check if clinician exists in Supabase
+export const checkClinicianExists = async (clinicianId: string): Promise<boolean> => {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.from("clinicians").select("id").eq("id", clinicianId).single()
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        // No rows returned - clinician doesn't exist
+        return false
+      }
+      console.error("Error checking if clinician exists:", error)
+      throw error
+    }
+
+    return !!data
+  } catch (error) {
+    console.error("Error in checkClinicianExists:", error)
+    return false
+  }
+}
+
 // Save clinician data to Supabase
 export const saveClinicianToSupabase = async (
   clinicianData: any,
@@ -94,65 +116,53 @@ export const saveRankingsToSupabase = async (
     testSequence: number[] // The actual test sequence
   },
   clinicianId: string,
-  clinicianData?: {
-    name: string
-    institution: string
-    experience: string
-    created_at: string
-  },
+  clinicianData?: any,
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     const supabase = createClient()
     const now = new Date().toISOString()
 
     // First, ensure the clinician exists in the database
-    if (clinicianData) {
-      console.log("Saving clinician data to Supabase as part of test submission")
+    const clinicianExists = await checkClinicianExists(clinicianId)
 
-      // Check if clinician already exists
-      const { data: existingClinician, error: checkError } = await supabase
+    if (!clinicianExists) {
+      console.log("Clinician does not exist in database, creating record first")
+
+      if (!clinicianData) {
+        // If no clinician data was provided, we can't create the record
+        return {
+          success: false,
+          error: "Clinician does not exist in database and no clinician data was provided to create it",
+        }
+      }
+
+      // Create the clinician record
+      const { success, error } = await saveClinicianToSupabase({
+        id: clinicianId,
+        name: clinicianData.name || "Anonymous",
+        institution: clinicianData.institution || "Not specified",
+        experience: clinicianData.experience || "unknown",
+        created_at: clinicianData.created_at || now,
+        submitted_test: true,
+      })
+
+      if (!success) {
+        console.error("Error creating clinician record:", error)
+        return { success: false, error: `Failed to create clinician record: ${error}` }
+      }
+    } else {
+      // Update existing clinician to mark as having submitted the test
+      const { error: updateError } = await supabase
         .from("clinicians")
-        .select("*")
+        .update({
+          submitted_test: true,
+          updated_at: now,
+        })
         .eq("id", clinicianId)
-        .single()
 
-      if (checkError && checkError.code !== "PGRST116") {
-        console.error("Error checking for existing clinician:", checkError)
+      if (updateError) {
+        console.error("Error updating clinician:", updateError)
         // Continue anyway to try to save the rankings
-      } else if (!existingClinician) {
-        // Insert new clinician
-        const { error: insertError } = await supabase.from("clinicians").insert([
-          {
-            id: clinicianId,
-            name: clinicianData.name,
-            institution: clinicianData.institution,
-            experience: clinicianData.experience,
-            created_at: clinicianData.created_at || now,
-            submitted_test: true, // Mark as having submitted the test
-          },
-        ])
-
-        if (insertError) {
-          console.error("Error inserting clinician:", insertError)
-          // Continue anyway to try to save the rankings
-        }
-      } else {
-        // Update existing clinician to mark as having submitted the test
-        const { error: updateError } = await supabase
-          .from("clinicians")
-          .update({
-            name: clinicianData.name,
-            institution: clinicianData.institution,
-            experience: clinicianData.experience,
-            updated_at: now,
-            submitted_test: true, // Mark as having submitted the test
-          })
-          .eq("id", clinicianId)
-
-        if (updateError) {
-          console.error("Error updating clinician:", updateError)
-          // Continue anyway to try to save the rankings
-        }
       }
     }
 

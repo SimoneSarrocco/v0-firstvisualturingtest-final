@@ -545,7 +545,7 @@ export default function TestPage() {
 
       console.log("Connection test successful, proceeding with data submission")
 
-      // Save all rankings to Supabase
+      // Save all rankings to Supabase - pass clinician data to ensure it exists
       const { success, error } = await saveRankingsToSupabase(
         {
           rankings,
@@ -553,6 +553,7 @@ export default function TestPage() {
           testSequence, // Pass the test sequence to help with question numbering
         },
         clinicianId,
+        clinicianData, // Pass clinician data to ensure it exists
       )
 
       if (!success) {
