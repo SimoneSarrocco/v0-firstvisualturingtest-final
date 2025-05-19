@@ -79,17 +79,32 @@ export default function AdminPage() {
     if (!experience) return "unknown"
 
     // Convert to lowercase for case-insensitive comparison
-    const expLower = experience.toLowerCase()
+    const expLower = experience.toLowerCase().trim()
 
-    if (expLower === "less_than_5" || expLower === "less than 5" || expLower === "<5") {
+    if (
+      expLower === "less_than_5" ||
+      expLower === "less than 5" ||
+      expLower === "<5" ||
+      expLower.includes("less") ||
+      expLower.includes("<")
+    ) {
       return "less_than_5"
     }
 
-    if (expLower === "5_or_more" || expLower === "5 or more" || expLower === ">=5" || expLower === "5+") {
+    if (
+      expLower === "5_or_more" ||
+      expLower === "5 or more" ||
+      expLower === ">=5" ||
+      expLower === "5+" ||
+      expLower.includes("more") ||
+      expLower.includes(">=") ||
+      expLower.includes("+")
+    ) {
       return "5_or_more"
     }
 
-    return experience
+    // Default to unknown if we can't determine the experience level
+    return "unknown"
   }
 
   // Download results as CSV
@@ -251,13 +266,18 @@ export default function AdminPage() {
     const experienceCount = {
       less_than_5: 0,
       five_or_more: 0,
+      unknown: 0,
     }
 
     clinicians.forEach((clinician) => {
-      if (clinician.experience === "less_than_5") {
+      const normalizedExperience = normalizeExperienceValue(clinician.experience)
+
+      if (normalizedExperience === "less_than_5") {
         experienceCount.less_than_5++
-      } else if (clinician.experience === "5_or_more") {
+      } else if (normalizedExperience === "5_or_more") {
         experienceCount.five_or_more++
+      } else {
+        experienceCount.unknown++
       }
     })
 
@@ -377,6 +397,12 @@ export default function AdminPage() {
                               <span>5+ years experience:</span>
                               <span className="font-medium">{experienceStats.five_or_more}</span>
                             </li>
+                            {experienceStats.unknown > 0 && (
+                              <li className="flex justify-between">
+                                <span>Unknown experience:</span>
+                                <span className="font-medium">{experienceStats.unknown}</span>
+                              </li>
+                            )}
                           </>
                         )}
                       </ul>
