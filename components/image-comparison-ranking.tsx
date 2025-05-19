@@ -293,11 +293,11 @@ export function ImageComparisonRanking({
     <div className="flex flex-col space-y-3 w-full">
       {/* Instructions - Made more prominent but compact */}
       <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-1">
-        <p className="text-blue-800 font-medium text-sm">
-          Click or drag an AI-enhanced image to compare it with the low-quality original in full resolution
-          side-by-side. Rank the enhanced images from best (leftmost) to worst (rightmost) by dragging them into order
-          in the section below.
-        </p>
+        <ul className="text-blue-800 font-medium text-sm list-disc list-inside space-y-1">
+          <li>Click or drag an AI-enhanced image (from the section below) into the right side of the "Comparison Area" to compare it side-by-side with the low-quality OCT image in their native resolution.</li>
+          <li>To compare two enhanced images in full resolution, click back and forth between the ones you want to compare (from the section below) to spot any differences.</li>
+          <li>Rank the enhanced images from best (leftmost) to worst (rightmost), based on which ones you think are the best enhanced versions of the low-quality image, by dragging them into order in the section below.</li>
+        </ul>
       </div>
 
       {/* Main comparison area with dotted border and label - more compact */}
