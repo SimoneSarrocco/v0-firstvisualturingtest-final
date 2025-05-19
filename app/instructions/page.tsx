@@ -29,7 +29,7 @@ export default function InstructionsPage() {
                   </ul>
                 <li>At the bottom of the screen, rank the 5 enhanced versions from best (1) to worst (5) by drag-and-drop, based on which ones you think are the best enhanced versions of the low-quality ART10 (see evaluation criteria in the section below).</li>
                   <ul className="list-disc list-inside pl-4 mt-1">
-                    <li>If you take the test from a touchscreen, you just have to click on the two images you want to swap instead of drag-and-drop.</li>
+                    <li>If you take the test from a touchscreen, you just have to click on the letters of the two images you want to swap instead of drag-and-drop.</li>
                   </ul>
                 <li>Submit your ranking for each question to proceed to the next.</li>
                 <li>All 10 questions must be completed before final submission.</li>
