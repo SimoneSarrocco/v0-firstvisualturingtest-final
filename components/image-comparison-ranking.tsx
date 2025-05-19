@@ -107,6 +107,9 @@ export function ImageComparisonRanking({
   // Map to store the letter for each model
   const [modelLetters, setModelLetters] = useState<Record<string, string>>({})
 
+  // Debug state to show the current mapping
+  const [debugInfo, setDebugInfo] = useState<string>("")
+
   // Track the question id to reset when question changes
   const lastInputImageRef = useRef<number | null>(null)
   const initialRankingRef = useRef<string[] | null>(null)
@@ -168,8 +171,26 @@ export function ImageComparisonRanking({
       setSelectedModel(initialRanking ? initialRanking[0] : sequence[0])
 
       isInitializedRef.current = true
+
+      // Update debug info
+      updateDebugInfo(initialRanking || sequence, sequence, letters)
     }
   }, [inputImage, models, initialRanking, initialSequence])
+
+  // Helper function to update debug info
+  const updateDebugInfo = (ranking: string[], sequence: string[], letters: Record<string, string>) => {
+    let info = "Original Sequence:\n"
+    sequence.forEach((model, i) => {
+      info += `${letters[model]}=${model}\n`
+    })
+
+    info += "\nCurrent Ranking:\n"
+    ranking.forEach((model, i) => {
+      info += `${i + 1}. ${letters[model]}=${model}\n`
+    })
+
+    setDebugInfo(info)
+  }
 
   // Get the correct image filename based on model and image number
   const getImageFilename = (model: string | null): string => {
@@ -236,6 +257,9 @@ export function ImageComparisonRanking({
 
         setModelRanking(newRanking)
 
+        // Update debug info
+        updateDebugInfo(newRanking, originalSequence, modelLetters)
+
         // Notify parent of ranking change
         if (onChange) {
           onChange(newRanking)
@@ -263,6 +287,13 @@ export function ImageComparisonRanking({
 
   // Handle submission - pass both the ranking and original sequence
   const handleSubmit = () => {
+    // Log the current state for debugging
+    console.log("Submitting ranking:", {
+      originalSequence,
+      modelRanking,
+      modelLetters,
+    })
+
     onSubmit(modelRanking, originalSequence)
   }
 
@@ -443,6 +474,11 @@ export function ImageComparisonRanking({
           isOpen={!!fullSizeImage}
           onClose={() => setFullSizeImage(null)}
         />
+      )}
+
+      {/* Debug info - hidden in production */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="mt-4 p-2 bg-gray-100 rounded text-xs font-mono whitespace-pre">{debugInfo}</div>
       )}
     </div>
   )
