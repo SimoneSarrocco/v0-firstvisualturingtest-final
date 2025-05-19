@@ -38,7 +38,7 @@ export default function InstructionsPage() {
 
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-blue-600">Evaluation Criteria:</h3>
-              <p className="mb-2 text-gray-700">When ranking the enhanced images, please consider:</p>
+              <p className="mb-2 text-gray-700">When ranking the enhanced images, please consider (with respect to the low-quality image):</p>
               <ul className="list-disc pl-6 space-y-1 text-gray-700">
                 <li>Reduction of speckle noise</li>
                 <li>Removal of motion artifacts</li>
