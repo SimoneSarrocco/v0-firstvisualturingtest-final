@@ -99,8 +99,13 @@ export default function TestPage() {
   const [currentRanking, setCurrentRanking] = useState(null)
   // Add a key to force re-render of the component
   const [rankingKey, setRankingKey] = useState(0)
-  // Debug mode
+  // Debug mode - hidden from regular users
   const [debugMode, setDebugMode] = useState(false)
+  // Admin mode - for accessing debug features
+  const [isAdmin, setIsAdmin] = useState(false)
+  // Secret key sequence for admin mode
+  const keySequence = useRef([])
+  const adminKeyCombo = "debug"
 
   // Modify the initializeTest function to properly handle session state
   // Replace the existing initializeTest function with this updated version
@@ -226,6 +231,33 @@ export default function TestPage() {
     }
   }, [router])
 
+  // Handle keyboard events for secret admin mode
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Only track alphabetic keys
+      if (/^[a-z]$/i.test(e.key)) {
+        keySequence.current.push(e.key.toLowerCase())
+
+        // Keep only the last N keys where N is the length of the admin combo
+        if (keySequence.current.length > adminKeyCombo.length) {
+          keySequence.current.shift()
+        }
+
+        // Check if the sequence matches the admin combo
+        const currentSequence = keySequence.current.join("")
+        if (currentSequence === adminKeyCombo) {
+          setIsAdmin(true)
+          console.log("Admin mode activated")
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [])
+
   useEffect(() => {
     setIsMounted(true)
     initializeTest()
@@ -235,6 +267,7 @@ export default function TestPage() {
       const urlParams = new URLSearchParams(window.location.search)
       if (urlParams.get("debug") === "true") {
         setDebugMode(true)
+        console.log("Debug mode activated via URL parameter")
       }
     }
 
@@ -660,7 +693,7 @@ export default function TestPage() {
     return null
   }
 
-  // Toggle debug mode
+  // Toggle debug mode - only available in admin mode
   const toggleDebugMode = () => {
     setDebugMode(!debugMode)
   }
@@ -732,7 +765,7 @@ export default function TestPage() {
             <div className="progress-bar h-full" style={{ width: `${progress}%` }}></div>
           </div>
 
-          {/* Debug info */}
+          {/* Debug info - only shown when debug mode is active */}
           {debugMode && (
             <div className="bg-gray-100 p-2 rounded text-xs font-mono mb-2">
               <div>
@@ -825,12 +858,14 @@ export default function TestPage() {
             </div>
           )}
 
-          {/* Debug mode toggle */}
-          <div className="flex justify-end mt-2">
-            <Button variant="outline" size="sm" onClick={toggleDebugMode} className="text-xs text-gray-500">
-              {debugMode ? "Hide Debug Info" : "Show Debug Info"}
-            </Button>
-          </div>
+          {/* Debug mode toggle - only visible in admin mode */}
+          {isAdmin && (
+            <div className="flex justify-end mt-2">
+              <Button variant="outline" size="sm" onClick={toggleDebugMode} className="text-xs text-gray-500">
+                {debugMode ? "Hide Debug Info" : "Show Debug Info"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
