@@ -46,7 +46,7 @@ export default function Home() {
               <div className="relative w-full">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col items-center">
-                    <span className="text-sm text-gray-600 mb-1">Original Image</span>
+                    <span className="text-sm text-gray-600 mb-1">Original Low-Quality Image</span>
                     <div className="relative border border-gray-200 rounded-md overflow-hidden w-full aspect-[3/2]">
                       <Image
                         src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/1.jpg"
@@ -70,7 +70,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="text-center text-sm text-gray-700 mt-2">
-                <p>On the left, the true low-quality OCT image (ART10) acquired with the Heidelberg OCT Spectralis. On the right, one of the enhanced versions obtained from one of our models.</p>
+                <p>On the left, the true low-quality OCT image (ART10) acquired with the Heidelberg OCT Spectralis. On the right, one of the enhanced versions obtained from one of our AI models.</p>
               </div>
             </CardContent>
           </Card>
