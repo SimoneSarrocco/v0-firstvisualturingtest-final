@@ -96,15 +96,19 @@ export const saveRankingsToSupabase = async (
     const now = new Date().toISOString()
 
     // Prepare the data for insertion
-    const rankingsToInsert = Object.entries(data.rankings).map(([imageId, modelRanking]) => {
+    const rankingsToInsert = Object.entries(data.rankings).map(([imageId, modelRanking], index) => {
       // Get the original model sequence for this image
       const modelSequence = data.modelSequences[imageId] || []
+
+      // Find the question number (index) for this imageId in the test sequence
+      const questionNumber = Object.keys(data.rankings).indexOf(imageId) + 1
 
       return {
         clinician_id: clinicianId,
         image_id: Number.parseInt(imageId),
         model_rankings: modelRanking,
         model_sequence: modelSequence,
+        question_number: questionNumber,
         submitted_at: now,
       }
     })

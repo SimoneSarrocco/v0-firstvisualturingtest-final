@@ -7,9 +7,12 @@ export const formatRankingsForExport = (
 ) => {
   const now = new Date().toISOString()
 
-  return Object.entries(rankings).map(([imageId, modelRanking]) => {
+  return Object.entries(rankings).map(([imageId, modelRanking], index) => {
     // Get the original model sequence for this image
     const modelSequence = modelSequences[imageId] || []
+
+    // Find the question number for this imageId
+    const questionNumber = Object.keys(rankings).indexOf(imageId) + 1
 
     return {
       clinician_id: clinicianId,
@@ -18,6 +21,7 @@ export const formatRankingsForExport = (
       clinician_experience: clinicianData.experience || "unknown",
       clinician_created_at: clinicianData.created_at || now,
       image_id: imageId,
+      question_number: questionNumber,
       model_rankings: JSON.stringify(modelRanking),
       model_sequence: JSON.stringify(modelSequence),
       submitted_at: now,
@@ -27,6 +31,17 @@ export const formatRankingsForExport = (
 
 // Helper function to create CSV content
 export const createCSV = (headers: string[], data: any[]) => {
+  // If headers don't include question_number, add it
+  if (!headers.includes("question_number")) {
+    // Find the position after image_id
+    const imageIdIndex = headers.indexOf("image_id")
+    if (imageIdIndex !== -1) {
+      headers.splice(imageIdIndex + 1, 0, "question_number")
+    } else {
+      headers.push("question_number")
+    }
+  }
+
   // Create header row
   let csv = headers.join(",") + "\n"
 

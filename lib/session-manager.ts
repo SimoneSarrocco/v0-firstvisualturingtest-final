@@ -139,6 +139,7 @@ export const saveRankingToSupabase = async (
   imageId: number,
   modelRankings: string[],
   modelSequence: string[],
+  questionNumber: number, // Add this parameter
 ) => {
   try {
     const supabase = createClient()
@@ -165,6 +166,7 @@ export const saveRankingToSupabase = async (
         .update({
           model_rankings: modelRankings,
           model_sequence: modelSequence,
+          question_number: questionNumber, // Add this field
           submitted_at: now,
         })
         .eq("session_id", sessionId)
@@ -183,6 +185,7 @@ export const saveRankingToSupabase = async (
           image_id: imageId,
           model_rankings: modelRankings,
           model_sequence: modelSequence,
+          question_number: questionNumber, // Add this field
           submitted_at: now,
         },
       ])

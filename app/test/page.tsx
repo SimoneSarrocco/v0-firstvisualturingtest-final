@@ -499,7 +499,14 @@ export default function TestPage() {
       console.log("Connection test successful, proceeding with data submission")
 
       // Save all rankings to Supabase
-      const { success, error } = await saveRankingsToSupabase({ rankings, modelSequences }, clinicianId)
+      const { success, error } = await saveRankingsToSupabase(
+        {
+          rankings,
+          modelSequences,
+          testSequence, // Add the test sequence to help with question numbering
+        },
+        clinicianId,
+      )
 
       if (!success) {
         console.error("Error saving rankings:", error)
@@ -564,7 +571,13 @@ export default function TestPage() {
       }
 
       // Format the data for export - combine clinician and ranking data
-      const formattedData = formatRankingsForExport(rankings, modelSequences, clinicianId, clinicianData)
+      const formattedData = formatRankingsForExport(
+        rankings,
+        modelSequences,
+        clinicianId,
+        clinicianData,
+        testSequence, // Add test sequence here
+      )
 
       // Define headers for the combined CSV
       const headers = [
