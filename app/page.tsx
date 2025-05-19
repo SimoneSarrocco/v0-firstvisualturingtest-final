@@ -70,7 +70,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="text-center text-sm text-gray-700 mt-2">
-                <p>Our AI models significantly improve image clarity and detail</p>
+                <p>On the left, the true low-quality OCT image (ART10) acquired with the Heidelberg OCT Spectralis. On the right, one of the enhanced versions obtained from one of our models.</p>
               </div>
             </CardContent>
           </Card>
