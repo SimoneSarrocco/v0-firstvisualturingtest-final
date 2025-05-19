@@ -267,6 +267,7 @@ export default function TestPage() {
       const urlParams = new URLSearchParams(window.location.search)
       if (urlParams.get("debug") === "true") {
         setDebugMode(true)
+        setIsAdmin(true) // Also set admin mode when debug is activated via URL
         console.log("Debug mode activated via URL parameter")
       }
     }
