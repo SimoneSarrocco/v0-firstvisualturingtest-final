@@ -18,7 +18,6 @@ import {
   CLINICIAN_EXPERIENCE_KEY,
   CLINICIAN_CREATED_AT_KEY,
 } from "@/lib/storage-utils"
-import { saveClinicianToSupabase } from "@/lib/supabase-utils"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -63,19 +62,9 @@ export default function LoginPage() {
       saveToStorage(CLINICIAN_EXPERIENCE_KEY, experience)
       saveToStorage(CLINICIAN_CREATED_AT_KEY, timestamp)
 
-      // Try to save to Supabase if available
-      try {
-        const { success, error } = await saveClinicianToSupabase(clinicianData)
-
-        if (!success) {
-          console.warn("Could not save to Supabase:", error)
-          setConnectionError(true)
-        }
-      } catch (err) {
-        // If Supabase is not available, just continue but show a warning
-        console.warn("Could not save to Supabase:", err)
-        setConnectionError(true)
-      }
+      // We'll only save to Supabase when the test is submitted
+      // Just log that we're storing locally for now
+      console.log("Clinician data stored locally. Will be saved to Supabase upon test submission.")
 
       // Redirect to instructions page
       router.push("/instructions")

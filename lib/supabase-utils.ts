@@ -94,10 +94,67 @@ export const saveRankingsToSupabase = async (
     testSequence: number[] // The actual test sequence
   },
   clinicianId: string,
+  clinicianData?: {
+    name: string
+    institution: string
+    experience: string
+    created_at: string
+  },
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     const supabase = createClient()
     const now = new Date().toISOString()
+
+    // First, ensure the clinician exists in the database
+    if (clinicianData) {
+      console.log("Saving clinician data to Supabase as part of test submission")
+
+      // Check if clinician already exists
+      const { data: existingClinician, error: checkError } = await supabase
+        .from("clinicians")
+        .select("*")
+        .eq("id", clinicianId)
+        .single()
+
+      if (checkError && checkError.code !== "PGRST116") {
+        console.error("Error checking for existing clinician:", checkError)
+        // Continue anyway to try to save the rankings
+      } else if (!existingClinician) {
+        // Insert new clinician
+        const { error: insertError } = await supabase.from("clinicians").insert([
+          {
+            id: clinicianId,
+            name: clinicianData.name,
+            institution: clinicianData.institution,
+            experience: clinicianData.experience,
+            created_at: clinicianData.created_at || now,
+            submitted_test: true, // Mark as having submitted the test
+          },
+        ])
+
+        if (insertError) {
+          console.error("Error inserting clinician:", insertError)
+          // Continue anyway to try to save the rankings
+        }
+      } else {
+        // Update existing clinician to mark as having submitted the test
+        const { error: updateError } = await supabase
+          .from("clinicians")
+          .update({
+            name: clinicianData.name,
+            institution: clinicianData.institution,
+            experience: clinicianData.experience,
+            updated_at: now,
+            submitted_test: true, // Mark as having submitted the test
+          })
+          .eq("id", clinicianId)
+
+        if (updateError) {
+          console.error("Error updating clinician:", updateError)
+          // Continue anyway to try to save the rankings
+        }
+      }
+    }
 
     // Create a mapping of imageId to question number (1-based index)
     const questionNumberMap = {}
