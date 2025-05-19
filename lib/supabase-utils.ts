@@ -88,20 +88,34 @@ export const saveClinicianToSupabase = async (
 
 // Save rankings to Supabase
 export const saveRankingsToSupabase = async (
-  data: { rankings: Record<string, string[]>; modelSequences: Record<string, string[]> },
+  data: {
+    rankings: Record<string, string[]>
+    modelSequences: Record<string, string[]>
+    testSequence: number[] // The actual test sequence
+  },
   clinicianId: string,
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     const supabase = createClient()
     const now = new Date().toISOString()
 
+    // Create a mapping of imageId to question number (1-based index)
+    const questionNumberMap = {}
+    data.testSequence.forEach((imageId, index) => {
+      questionNumberMap[imageId] = index + 1
+    })
+
+    console.log("Question number mapping:", questionNumberMap)
+
     // Prepare the data for insertion
-    const rankingsToInsert = Object.entries(data.rankings).map(([imageId, modelRanking], index) => {
+    const rankingsToInsert = Object.entries(data.rankings).map(([imageId, modelRanking]) => {
       // Get the original model sequence for this image
       const modelSequence = data.modelSequences[imageId] || []
 
-      // Find the question number (index) for this imageId in the test sequence
-      const questionNumber = Object.keys(data.rankings).indexOf(imageId) + 1
+      // Get the question number from our mapping (1-based index)
+      const questionNumber = questionNumberMap[Number.parseInt(imageId)] || 0
+
+      console.log(`Image ID ${imageId} is question number ${questionNumber}`)
 
       return {
         clinician_id: clinicianId,

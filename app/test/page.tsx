@@ -99,6 +99,8 @@ export default function TestPage() {
   const [currentRanking, setCurrentRanking] = useState(null)
   // Add a key to force re-render of the component
   const [rankingKey, setRankingKey] = useState(0)
+  // Debug mode
+  const [debugMode, setDebugMode] = useState(false)
 
   // Modify the initializeTest function to properly handle session state
   // Replace the existing initializeTest function with this updated version
@@ -137,6 +139,9 @@ export default function TestPage() {
       // Generate a new test sequence
       const sequence = generateTestSequence()
       setTestSequence(sequence)
+
+      // Log the test sequence for debugging
+      console.log("Test sequence (question order):", sequence)
 
       // Try to load saved rankings and sequences from localStorage
       try {
@@ -224,6 +229,14 @@ export default function TestPage() {
   useEffect(() => {
     setIsMounted(true)
     initializeTest()
+
+    // Check for debug mode in URL
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.get("debug") === "true") {
+        setDebugMode(true)
+      }
+    }
 
     // Clear any existing timeouts on unmount
     return () => {
@@ -503,7 +516,7 @@ export default function TestPage() {
         {
           rankings,
           modelSequences,
-          testSequence, // Add the test sequence to help with question numbering
+          testSequence, // Pass the test sequence to help with question numbering
         },
         clinicianId,
       )
@@ -576,7 +589,7 @@ export default function TestPage() {
         modelSequences,
         clinicianId,
         clinicianData,
-        testSequence, // Add test sequence here
+        testSequence, // Pass the test sequence to help with question numbering
       )
 
       // Define headers for the combined CSV
@@ -589,6 +602,7 @@ export default function TestPage() {
         "image_id",
         "model_rankings",
         "model_sequence",
+        "question_number",
         "submitted_at",
       ]
 
@@ -644,6 +658,11 @@ export default function TestPage() {
       return <span className="ml-1 text-green-500">✓</span>
     }
     return null
+  }
+
+  // Toggle debug mode
+  const toggleDebugMode = () => {
+    setDebugMode(!debugMode)
   }
 
   // Don't render anything during SSR
@@ -712,6 +731,27 @@ export default function TestPage() {
           <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-1">
             <div className="progress-bar h-full" style={{ width: `${progress}%` }}></div>
           </div>
+
+          {/* Debug info */}
+          {debugMode && (
+            <div className="bg-gray-100 p-2 rounded text-xs font-mono mb-2">
+              <div>
+                <strong>Current Image ID:</strong> {currentImage}
+              </div>
+              <div>
+                <strong>Question Number:</strong> {currentImageIndex + 1}
+              </div>
+              <div>
+                <strong>Test Sequence:</strong> {JSON.stringify(testSequence)}
+              </div>
+              <div>
+                <strong>Current Model Sequence:</strong> {JSON.stringify(currentModelSequence)}
+              </div>
+              <div>
+                <strong>Current Saved Ranking:</strong> {JSON.stringify(currentSavedRanking)}
+              </div>
+            </div>
+          )}
 
           {/* Alerts in a row to save vertical space */}
           <div className="flex flex-wrap gap-1 mb-1">
@@ -784,6 +824,13 @@ export default function TestPage() {
               Ranking saved
             </div>
           )}
+
+          {/* Debug mode toggle */}
+          <div className="flex justify-end mt-2">
+            <Button variant="outline" size="sm" onClick={toggleDebugMode} className="text-xs text-gray-500">
+              {debugMode ? "Hide Debug Info" : "Show Debug Info"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
