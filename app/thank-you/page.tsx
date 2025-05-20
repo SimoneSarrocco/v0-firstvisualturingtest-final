@@ -146,7 +146,7 @@ export default function ThankYouPage() {
   const calculateResults = (rankingsJson: string) => {
     try {
       const rankings = JSON.parse(rankingsJson)
-      const models = ["DDPM", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+      const models = ["DDPM_new", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
 
       // Initialize model stats
       const modelStats: Record<string, { totalRank: number; count: number }> = {}
