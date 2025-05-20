@@ -49,7 +49,7 @@ export default function Home() {
                     <span className="text-sm text-gray-600 mb-1">Original Low-Quality Image</span>
                     <div className="relative border border-gray-200 rounded-md overflow-hidden w-full aspect-[3/2]">
                       <Image
-                        src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/1.jpg"
+                        src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/1.png"
                         alt="Example of a low-quality vitreous OCT image"
                         fill
                         className="object-cover"
