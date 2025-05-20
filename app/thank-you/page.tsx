@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase-client"
 
 // Define full model names with abbreviations
 const MODEL_FULL_NAMES: Record<string, string> = {
-  DDPM: "Denoising Diffusion Probabilistic Model",
+  DDPM_new: "Denoising Diffusion Probabilistic Model",
   VQGAN: "Vector-Quantized GAN",
   UNET: "U-Net",
   Pix2Pix: "Pix2Pix",
