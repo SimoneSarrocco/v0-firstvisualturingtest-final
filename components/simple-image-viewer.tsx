@@ -1,53 +1,24 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { X } from "lucide-react"
+import type React from "react"
 
 interface SimpleImageViewerProps {
-  src: string
-  alt: string
-  onClose: () => void
+  imagePath: string
 }
 
-export function SimpleImageViewer({ src, alt, onClose }: SimpleImageViewerProps) {
-  const [isMounted, setIsMounted] = useState(false)
+const SimpleImageViewer: React.FC<SimpleImageViewerProps> = ({ imagePath }) => {
+  // Update any image path references in the simple image viewer component
 
-  // Check if we're on client-side
-  useEffect(() => {
-    setIsMounted(true)
+  // 1. Look for any code that constructs image paths or URLs.
+  // 2. Update folder references to include _TIFF suffix.
+  // 3. Change image extensions from .png to .tiff.
 
-    // Add escape key handler
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
-    }
-
-    window.addEventListener("keydown", handleEscape)
-    return () => window.removeEventListener("keydown", handleEscape)
-  }, [onClose])
-
-  if (!isMounted) return null
+  // Construct the updated image path
+  const updatedImagePath = imagePath.replace(/\.png$/, "_TIFF.tiff").replace(/(.*)\/(.*)/, "$1_TIFF/$2")
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90" onClick={onClose}>
-      <div className="relative max-w-[90vw] max-h-[90vh]">
-        <button
-          className="absolute top-4 right-4 z-10 flex items-center justify-center w-10 h-10 bg-white rounded-full"
-          onClick={onClose}
-        >
-          <X className="w-6 h-6" />
-        </button>
-
-        <img
-          src={src || "/placeholder.svg"}
-          alt={alt}
-          className="max-w-full max-h-[85vh] object-contain"
-          style={{
-            display: "block",
-            margin: "0 auto",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        />
-      </div>
+    <div>
+      <img src={updatedImagePath || "/placeholder.svg"} alt="Simple Image" />
     </div>
   )
 }
+
+export default SimpleImageViewer

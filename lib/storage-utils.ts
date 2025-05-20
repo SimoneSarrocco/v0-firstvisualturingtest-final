@@ -3,14 +3,14 @@
  */
 
 // Storage keys
-const DEVICE_ID_KEY = "oct_device_id"
-const CLINICIAN_ID_KEY = "oct_clinician_id"
-const CLINICIAN_NAME_KEY = "oct_clinician_name"
-const CLINICIAN_INSTITUTION_KEY = "oct_clinician_institution"
-const CLINICIAN_EXPERIENCE_KEY = "oct_clinician_experience"
-const CLINICIAN_CREATED_AT_KEY = "oct_clinician_created_at"
-const SUBMISSION_TIMESTAMP_KEY = "oct_submission_timestamp"
-const SESSION_ID_KEY = "oct_session_id"
+export const DEVICE_ID_KEY = "oct_device_id"
+export const CLINICIAN_ID_KEY = "oct_clinician_id"
+export const CLINICIAN_NAME_KEY = "oct_clinician_name"
+export const CLINICIAN_INSTITUTION_KEY = "oct_clinician_institution"
+export const CLINICIAN_EXPERIENCE_KEY = "oct_clinician_experience"
+export const CLINICIAN_CREATED_AT_KEY = "oct_clinician_created_at"
+export const SUBMISSION_TIMESTAMP_KEY = "oct_submission_timestamp"
+export const SESSION_ID_KEY = "oct_session_id"
 
 // Generate a unique device ID
 export function getOrCreateDeviceId(): string {
@@ -142,16 +142,4 @@ export function clearTestSessionData(): void {
   } catch (error) {
     console.error("Error clearing test session data:", error)
   }
-}
-
-// Export storage keys for use in other files
-export {
-  DEVICE_ID_KEY,
-  CLINICIAN_ID_KEY,
-  CLINICIAN_NAME_KEY,
-  CLINICIAN_INSTITUTION_KEY,
-  CLINICIAN_EXPERIENCE_KEY,
-  CLINICIAN_CREATED_AT_KEY,
-  SUBMISSION_TIMESTAMP_KEY,
-  SESSION_ID_KEY,
 }

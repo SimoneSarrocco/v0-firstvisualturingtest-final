@@ -1,4 +1,4 @@
-import { createClient } from "./supabase-client"
+import { createClient } from "@/lib/supabase-client"
 
 // Check if Supabase environment variables are available
 export const hasSupabaseEnvVars = (): boolean => {
@@ -241,4 +241,17 @@ export const saveRankingsToSupabase = async (
     console.error("Error in saveRankingsToSupabase:", error)
     return { success: false, error: error.message || "Unknown error" }
   }
+}
+
+// Function to construct the image URL from the image path.
+// This function now includes the _TIFF suffix and changes the extension to .tiff.
+export const constructImageUrl = (imagePath: string | null | undefined, bucketUrl: string): string | null => {
+  if (!imagePath) {
+    return null
+  }
+
+  // Update folder references to include _TIFF suffix and change extension to .tiff
+  const updatedImagePath = imagePath.replace(/\.png$/, ".tiff").replace(/(images)\//i, "$1_TIFF/")
+
+  return `${bucketUrl}/${updatedImagePath}`
 }

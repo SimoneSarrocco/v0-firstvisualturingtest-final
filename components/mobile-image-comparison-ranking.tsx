@@ -83,6 +83,7 @@ interface MobileImageComparisonRankingProps {
   onChange?: (ranking: string[]) => void
   initialRanking?: string[] | null
   initialSequence?: string[] | null
+  getImageSrc?: (imageId: number, model: string | null) => string
 }
 
 export function MobileImageComparisonRanking({
@@ -92,6 +93,7 @@ export function MobileImageComparisonRanking({
   onChange,
   initialRanking,
   initialSequence,
+  getImageSrc: customGetImageSrc,
 }: MobileImageComparisonRankingProps) {
   // State for model order/ranking
   const [modelRanking, setModelRanking] = useState<string[]>([])
@@ -189,12 +191,18 @@ export function MobileImageComparisonRanking({
 
   // Get image source URL
   const getImageSrc = (model: string | null): string => {
+    // If a custom getImageSrc function is provided, use it
+    if (customGetImageSrc) {
+      return customGetImageSrc(inputImage, model)
+    }
+
     if (model === null) {
       // Input image
       return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs_tiff/${getImageFilename(null)}`
     } else {
-      // Model image
-      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}_TIFF/${getImageFilename(model)}`
+      // Model image - add _TIFF suffix to model name
+      const modelFolder = `${model}_TIFF`
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${modelFolder}/${getImageFilename(model)}`
     }
   }
 
