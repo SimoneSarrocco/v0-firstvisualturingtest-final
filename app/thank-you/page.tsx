@@ -110,7 +110,7 @@ export default function ThankYouPage() {
   // Calculate results from Supabase data
   const calculateResultsFromSupabase = (rankings: Record<number, string[]>) => {
     try {
-      const models = ["DDPM", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+      const models = ["DDPM_new", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
 
       // Initialize model stats
       const modelStats: Record<string, { totalRank: number; count: number }> = {}
