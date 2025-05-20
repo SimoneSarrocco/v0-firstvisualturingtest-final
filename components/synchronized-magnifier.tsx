@@ -25,12 +25,12 @@ export function SynchronizedMagnifier({ inputImage, models, onlyOriginal = false
 
   // Get the correct image filename based on model and image number
   const getImageFilename = (model: string): string => {
-    if (model === "BBDM_TIFF") {
+    if (model === "BBDM") {
       // BBDM uses x_{index}_0.png format (0-indexed)
-      return `x_${inputImage - 1}_0.tiff`
+      return `x_${inputImage - 1}_0.png`
     } else {
       // Other models use output_{number}.png format (1-indexed)
-      return `output_${inputImage}.tiff`
+      return `output_${inputImage}.png`
     }
   }
 
@@ -38,7 +38,7 @@ export function SynchronizedMagnifier({ inputImage, models, onlyOriginal = false
   const getImageSrc = (model: string | null): string => {
     if (model === null) {
       // Input image
-      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs_tiff/${inputImage}.tiff`
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/${inputImage}.png`
     } else {
       // Model image
       const filename = getImageFilename(model)

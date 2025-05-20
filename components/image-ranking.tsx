@@ -10,12 +10,12 @@ import { cn } from "@/lib/utils"
 
 // Helper function to get the correct image filename based on model and image number
 const getImageFilename = (model: string, imageNumber: number): string => {
-  if (model === "BBDM_TIFF") {
+  if (model === "BBDM") {
     // BBDM uses x_{index}_0.png format (0-indexed)
-    return `x_${imageNumber - 1}_0.tiff`
+    return `x_${imageNumber - 1}_0.png`
   } else {
     // Other models use output_{number}.png format (1-indexed)
-    return `output_${imageNumber}.tiff`
+    return `output_${imageNumber}.png`
   }
 }
 

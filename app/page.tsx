@@ -49,7 +49,7 @@ export default function Home() {
                     <span className="text-sm text-gray-600 mb-1">Original Low-Quality Image</span>
                     <div className="relative border border-gray-200 rounded-md overflow-hidden w-full aspect-[3/2]">
                       <Image
-                        src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs_tiff/1.tiff"
+                        src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/1.png"
                         alt="Example of a low-quality vitreous OCT image"
                         fill
                         className="object-cover"
@@ -60,7 +60,7 @@ export default function Home() {
                     <span className="text-sm text-gray-600 mb-1">Enhanced Image</span>
                     <div className="relative border border-gray-200 rounded-md overflow-hidden w-full aspect-[3/2]">
                       <Image
-                        src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/BBDM_TIFF/x_0_0.tiff"
+                        src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/BBDM/x_0_0.png"
                         alt="Example of an enhanced vitreous OCT image"
                         fill
                         className="object-cover"

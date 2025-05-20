@@ -97,12 +97,12 @@ function SortableImage({
 
   // Get the correct image filename based on model and image number
   const getImageFilename = (model, imageNumber) => {
-    if (model === "BBDM_TIFF") {
+    if (model === "BBDM") {
       // BBDM uses x_{index}_0.png format (0-indexed)
-      return `x_${imageNumber - 1}_0.tiff`
+      return `x_${imageNumber - 1}_0.png`
     } else {
       // Other models use output_{number}.png format (1-indexed)
-      return `output_${imageNumber}.tiff`
+      return `output_${imageNumber}.png`
     }
   }
 
@@ -341,12 +341,12 @@ export function DragDropRanking({ inputImage, models, onSubmit, initialRanking }
   // Handle full-size image view
   const handleViewFullImage = (model, index) => {
     let filename
-    if (model === "BBDM_TIFF") {
+    if (model === "BBDM") {
       // BBDM uses x_{index}_0.png format (0-indexed)
-      filename = `x_${inputImage - 1}_0.tiff`
+      filename = `x_${inputImage - 1}_0.png`
     } else {
       // Other models use output_{number}.png format (1-indexed)
-      filename = `output_${inputImage}.tiff`
+      filename = `output_${inputImage}.png`
     }
 
     setViewingImage({
@@ -448,12 +448,12 @@ export function DragDropRanking({ inputImage, models, onSubmit, initialRanking }
           {modelOrder.map((model, idx) => {
             // Get the correct image filename based on model and image number
             const getImageFilename = (model) => {
-              if (model === "BBDM_TIFF") {
+              if (model === "BBDM") {
                 // BBDM uses x_{index}_0.png format (0-indexed)
-                return `x_${inputImage - 1}_0.tiff`
+                return `x_${inputImage - 1}_0.png`
               } else {
                 // Other models use output_{number}.png format (1-indexed)
-                return `output_${inputImage}.tiff`
+                return `output_${inputImage}.png`
               }
             }
 
