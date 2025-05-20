@@ -177,13 +177,13 @@ export function MobileImageComparisonRanking({
   const getImageFilename = (model: string | null): string => {
     if (model === null) {
       // Input image
-      return `${inputImage}.png`
+      return `${inputImage}.tiff`
     } else if (model === "BBDM") {
-      // BBDM uses x_{index}_0.png format (0-indexed)
-      return `x_${inputImage - 1}_0.png`
+      // BBDM uses x_{index}_0.tiff format (0-indexed)
+      return `x_${inputImage - 1}_0.tiff`
     } else {
-      // Other models use output_{number}.png format (1-indexed)
-      return `output_${inputImage}.png`
+      // Other models use output_{number}.tiff format (1-indexed)
+      return `output_${inputImage}.tiff`
     }
   }
 
@@ -191,10 +191,10 @@ export function MobileImageComparisonRanking({
   const getImageSrc = (model: string | null): string => {
     if (model === null) {
       // Input image
-      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/${getImageFilename(null)}`
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs_tiff/${getImageFilename(null)}`
     } else {
       // Model image
-      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}/${getImageFilename(model)}`
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}_TIFF/${getImageFilename(model)}`
     }
   }
 
