@@ -97,17 +97,17 @@ function SortableImage({
 
   // Get the correct image filename based on model and image number
   const getImageFilename = (model, imageNumber) => {
-    if (model === "BBDM") {
-      // BBDM uses x_{index}_0.tiff format (0-indexed)
+    if (model === "BBDM_TIFF") {
+      // BBDM uses x_{index}_0.png format (0-indexed)
       return `x_${imageNumber - 1}_0.tiff`
     } else {
-      // Other models use output_{number}.tiff format (1-indexed)
+      // Other models use output_{number}.png format (1-indexed)
       return `output_${imageNumber}.tiff`
     }
   }
 
   const filename = getImageFilename(model, imageNumber)
-  const imageSrc = `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}_TIFF/${filename}`
+  const imageSrc = `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}/${filename}`
 
   // Calculate magnifier size for indicator
   const magnifierSize = 150
@@ -341,16 +341,16 @@ export function DragDropRanking({ inputImage, models, onSubmit, initialRanking }
   // Handle full-size image view
   const handleViewFullImage = (model, index) => {
     let filename
-    if (model === "BBDM") {
-      // BBDM uses x_{index}_0.tiff format (0-indexed)
+    if (model === "BBDM_TIFF") {
+      // BBDM uses x_{index}_0.png format (0-indexed)
       filename = `x_${inputImage - 1}_0.tiff`
     } else {
-      // Other models use output_{number}.tiff format (1-indexed)
+      // Other models use output_{number}.png format (1-indexed)
       filename = `output_${inputImage}.tiff`
     }
 
     setViewingImage({
-      src: `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}_TIFF/${filename}`,
+      src: `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}/${filename}`,
       alt: `Enhanced Image ${imageLabels[model]}`,
     })
   }
@@ -448,17 +448,17 @@ export function DragDropRanking({ inputImage, models, onSubmit, initialRanking }
           {modelOrder.map((model, idx) => {
             // Get the correct image filename based on model and image number
             const getImageFilename = (model) => {
-              if (model === "BBDM") {
-                // BBDM uses x_{index}_0.tiff format (0-indexed)
+              if (model === "BBDM_TIFF") {
+                // BBDM uses x_{index}_0.png format (0-indexed)
                 return `x_${inputImage - 1}_0.tiff`
               } else {
-                // Other models use output_{number}.tiff format (1-indexed)
+                // Other models use output_{number}.png format (1-indexed)
                 return `output_${inputImage}.tiff`
               }
             }
 
             const filename = getImageFilename(model)
-            const imageSrc = `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}_TIFF/${filename}`
+            const imageSrc = `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}/${filename}`
 
             return (
               <div

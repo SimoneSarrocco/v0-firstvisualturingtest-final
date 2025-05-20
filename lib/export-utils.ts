@@ -1,41 +1,3 @@
-// lib/export-utils.ts
-
-/**
- * Utility functions for exporting data, specifically handling image paths and extensions.
- */
-
-/**
- * Updates an image path to use the _TIFF suffix and .tiff extension.
- *
- * @param imagePath The original image path (e.g., "images/my_image.png").
- * @returns The updated image path (e.g., "images_TIFF/my_image.tiff").
- */
-export function updateImagePathForTiff(imagePath: string): string {
-  // Replace .png with .tiff
-  let updatedPath = imagePath.replace(/\.png$/i, ".tiff")
-
-  // Add _TIFF suffix to the directory
-  updatedPath = updatedPath.replace(/(images)\//i, "$1_TIFF/")
-
-  return updatedPath
-}
-
-/**
- * Updates a URL containing an image path to use the _TIFF suffix and .tiff extension.
- *
- * @param imageUrl The original image URL (e.g., "https://example.com/images/my_image.png").
- * @returns The updated image URL (e.g., "https://example.com/images_TIFF/my_image.tiff").
- */
-export function updateImageUrlForTiff(imageUrl: string): string {
-  // Replace .png with .tiff
-  let updatedUrl = imageUrl.replace(/\.png$/i, ".tiff")
-
-  // Add _TIFF suffix to the directory
-  updatedUrl = updatedUrl.replace(/(images)\//i, "$1_TIFF/")
-
-  return updatedUrl
-}
-
 // Helper function to format rankings data for export
 export const formatRankingsForExport = (
   rankings: Record<string, string[]>,
@@ -45,7 +7,7 @@ export const formatRankingsForExport = (
   testSequence: number[] = [],
 ) => {
   // Create a mapping of imageId to question number (1-based index)
-  const questionNumberMap: Record<number, number> = {}
+  const questionNumberMap = {}
   testSequence.forEach((imageId, index) => {
     questionNumberMap[imageId] = index + 1
   })
@@ -72,7 +34,7 @@ export const formatRankingsForExport = (
 }
 
 // Helper function to create CSV content
-export const createCSVContent = (headers: string[], data: any[]) => {
+export const createCSV = (headers: string[], data: any[]) => {
   // Add question_number to headers if not already present
   if (!headers.includes("question_number")) {
     headers.push("question_number")
@@ -95,9 +57,6 @@ export const createCSVContent = (headers: string[], data: any[]) => {
   return [headerRow, ...rows].join("\n")
 }
 
-// Add this line after the createCSVContent function definition to provide backward compatibility
-export const createCSV = createCSVContent
-
 // Helper function to download CSV
 export const downloadCSV = (csvContent: string, filename: string) => {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
@@ -115,31 +74,4 @@ export const downloadCSV = (csvContent: string, filename: string) => {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-}
-
-/**
- * Example usage (can be removed in production).
- */
-if (import.meta.vitest) {
-  const { it, expect } = import.meta.vitest
-
-  it("updateImagePathForTiff should update the image path", () => {
-    const originalPath = "images/my_image.png"
-    const updatedPath = updateImagePathForTiff(originalPath)
-    expect(updatedPath).toBe("images_TIFF/my_image.tiff")
-
-    const originalPath2 = "images/another_image.PNG"
-    const updatedPath2 = updateImagePathForTiff(originalPath2)
-    expect(updatedPath2).toBe("images_TIFF/another_image.tiff")
-  })
-
-  it("updateImageUrlForTiff should update the image URL", () => {
-    const originalUrl = "https://example.com/images/my_image.png"
-    const updatedUrl = updateImageUrlForTiff(originalUrl)
-    expect(updatedUrl).toBe("https://example.com/images_TIFF/my_image.tiff")
-
-    const originalUrl2 = "https://example.com/images/another_image.PNG"
-    const updatedUrl2 = updateImageUrlForTiff(originalUrl2)
-    expect(updatedUrl2).toBe("https://example.com/images_TIFF/another_image.tiff")
-  })
 }

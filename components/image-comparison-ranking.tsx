@@ -85,7 +85,6 @@ interface ImageComparisonRankingProps {
   onChange?: (ranking: string[]) => void
   initialRanking?: string[] | null
   initialSequence?: string[] | null
-  getImageSrc?: (imageId: number, model: string | null) => string
 }
 
 export function ImageComparisonRanking({
@@ -95,7 +94,6 @@ export function ImageComparisonRanking({
   onChange,
   initialRanking,
   initialSequence,
-  getImageSrc: customGetImageSrc,
 }: ImageComparisonRankingProps) {
   // State for model order/ranking
   const [modelRanking, setModelRanking] = useState<string[]>([])
@@ -187,7 +185,6 @@ export function ImageComparisonRanking({
         onChange={onChange}
         initialRanking={initialRanking}
         initialSequence={initialSequence}
-        getImageSrc={customGetImageSrc}
       />
     )
   }
@@ -197,29 +194,23 @@ export function ImageComparisonRanking({
     if (model === null) {
       // Input image
       return `${inputImage}.tiff`
-    } else if (model === "BBDM") {
-      // BBDM uses x_{index}_0.tiff format (0-indexed)
+    } else if (model === "BBDM_TIFF") {
+      // BBDM uses x_{index}_0.png format (0-indexed)
       return `x_${inputImage - 1}_0.tiff`
     } else {
-      // Other models use output_{number}.tiff format (1-indexed)
+      // Other models use output_{number}.png format (1-indexed)
       return `output_${inputImage}.tiff`
     }
   }
 
   // Get image source URL
   const getImageSrc = (model: string | null): string => {
-    // If a custom getImageSrc function is provided, use it
-    if (customGetImageSrc) {
-      return customGetImageSrc(inputImage, model)
-    }
-
     if (model === null) {
       // Input image
       return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs_tiff/${getImageFilename(null)}`
     } else {
-      // Model image - add _TIFF suffix to model name
-      const modelFolder = `${model}_TIFF`
-      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${modelFolder}/${getImageFilename(model)}`
+      // Model image
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}/${getImageFilename(model)}`
     }
   }
 

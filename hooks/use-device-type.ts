@@ -6,7 +6,7 @@ interface DeviceType {
   isMobile: boolean
   isTablet: boolean
   isDesktop: boolean
-  isTouchDevice: boolean
+  hasTouch: boolean
 }
 
 export function useDeviceType(): DeviceType {
@@ -14,38 +14,32 @@ export function useDeviceType(): DeviceType {
     isMobile: false,
     isTablet: false,
     isDesktop: true,
-    isTouchDevice: false,
+    hasTouch: false,
   })
 
   useEffect(() => {
-    // Function to update device type based on screen size
-    const updateDeviceType = () => {
+    // Function to determine device type
+    const determineDeviceType = () => {
       const width = window.innerWidth
-      const isMobile = width < 768
-      const isTablet = width >= 768 && width < 1024
-      const isDesktop = width >= 1024
-
-      // Check if device has touch capabilities
-      const isTouchDevice =
-        "ontouchstart" in window || navigator.maxTouchPoints > 0 || (navigator as any).msMaxTouchPoints > 0
+      const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0
 
       setDeviceType({
-        isMobile,
-        isTablet,
-        isDesktop,
-        isTouchDevice,
+        isMobile: width < 640,
+        isTablet: width >= 640 && width < 1024,
+        isDesktop: width >= 1024,
+        hasTouch,
       })
     }
 
     // Initial check
-    updateDeviceType()
+    determineDeviceType()
 
-    // Add event listener for window resize
-    window.addEventListener("resize", updateDeviceType)
+    // Add resize listener
+    window.addEventListener("resize", determineDeviceType)
 
     // Cleanup
     return () => {
-      window.removeEventListener("resize", updateDeviceType)
+      window.removeEventListener("resize", determineDeviceType)
     }
   }, [])
 

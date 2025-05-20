@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { ImageComparisonRanking } from "@/components/image-comparison-ranking"
 import { Download, AlertCircle, Mail, Lock, CheckCircle, RefreshCw, Pencil } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { formatRankingsForExport, createCSVContent, downloadCSV } from "@/lib/export-utils"
+import { formatRankingsForExport, createCSV, downloadCSV } from "@/lib/export-utils"
 import {
   saveToStorage,
   getFromStorage,
@@ -24,7 +24,7 @@ import {
 import { testSupabaseConnection, saveRankingsToSupabase, hasSupabaseEnvVars } from "@/lib/supabase-utils"
 
 // Define model types - but don't show their names to users
-const models = ["DDPM", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+const models = ["DDPM_TIFF", "VQGAN_TIFF", "UNET_TIFF", "Pix2Pix_TIFF", "BBDM_TIFF"]
 
 // Generate test sequence - consistently select 10 random sets out of 17
 const generateTestSequence = () => {
@@ -642,7 +642,7 @@ export default function TestPage() {
       ]
 
       // Create and download the CSV
-      const csvContent = createCSVContent(headers, formattedData)
+      const csvContent = createCSV(headers, formattedData)
       downloadCSV(csvContent, `oct_evaluation_results_${clinicianId}`)
 
       // Mark as submitted in this session
@@ -716,25 +716,6 @@ export default function TestPage() {
         </div>
       </div>
     )
-  }
-
-  // Helper function to get image source URL with proper TIFF extension and folder
-  const getImageSrc = (imageId, model) => {
-    if (model === null) {
-      // Input image
-      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs_tiff/${imageId}.tiff`
-    } else {
-      // Model image - add _TIFF suffix to model name
-      const modelFolder = `${model}_TIFF`
-
-      if (model === "BBDM") {
-        // BBDM uses x_{index}_0.tiff format (0-indexed)
-        return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${modelFolder}/x_${imageId - 1}_0.tiff`
-      } else {
-        // Other models use output_{number}.tiff format (1-indexed)
-        return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${modelFolder}/output_${imageId}.tiff`
-      }
-    }
   }
 
   return (
@@ -868,7 +849,6 @@ export default function TestPage() {
               onChange={handleRankingChange}
               initialRanking={currentSavedRanking}
               initialSequence={currentModelSequence}
-              getImageSrc={getImageSrc}
             />
           )}
 
