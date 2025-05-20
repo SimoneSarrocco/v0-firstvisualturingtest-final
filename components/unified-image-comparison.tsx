@@ -300,8 +300,16 @@ export function UnifiedImageComparison({ inputImage, models, onSubmit, initialRa
 
             return (
               <div key={model} className="flex flex-col">
-                <div className={cn("p-2 text-center font-medium rounded-t-md", bgColorClass, textColorClass)}>
-                  Rank {index + 1}
+                <div className="p-2 text-center font-semibold rounded-t-md bg-gray-50 text-gray-700">
+                  {index === 0
+                    ? "Best"
+                    : index === 1
+                      ? "2nd Best"
+                      : index === 2
+                        ? "3rd Best"
+                        : index === 3
+                          ? "4th Best"
+                          : "Worst"}
                 </div>
                 <div
                   className={cn("relative border-2 rounded-b-md overflow-hidden", borderColorClass)}

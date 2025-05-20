@@ -386,14 +386,22 @@ export function MobileImageComparisonRanking({
 
             return (
               <div key={model} className="flex flex-col w-full">
-                <div className={cn("p-1 text-center font-medium rounded-t-md", bgColorClass, textColorClass)}>
-                  Rank {index + 1}
+                <div className="p-1 text-center font-semibold rounded-t-md bg-gray-50 text-gray-700">
+                  {index === 0
+                    ? "Best"
+                    : index === 1
+                      ? "2nd Best"
+                      : index === 2
+                        ? "3rd Best"
+                        : index === 3
+                          ? "4th Best"
+                          : "Worst"}
                 </div>
                 <div
                   className={cn(
                     "border-2 rounded-b-md overflow-hidden",
                     borderColorClass,
-                    isSelected ? "ring-2 ring-purple-500" : "",
+                    isSelected ? "ring-2 ring-inset ring-purple-500" : "",
                     swapMode && !isSelected ? "opacity-70" : "",
                   )}
                 >

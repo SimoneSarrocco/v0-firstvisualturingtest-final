@@ -433,8 +433,16 @@ export function ImageComparisonRanking({
                   setDragOverIndex(null)
                 }}
               >
-                <div className={cn("p-1 text-center font-medium rounded-t-md text-base", bgColorClass, textColorClass)}>
-                  Rank {index + 1}
+                <div className="p-1 text-center font-semibold rounded-t-md text-base bg-gray-50 text-gray-700">
+                  {index === 0
+                    ? "Best"
+                    : index === 1
+                      ? "2nd Best"
+                      : index === 2
+                        ? "3rd Best"
+                        : index === 3
+                          ? "4th Best"
+                          : "Worst"}
                 </div>
                 <div
                   className={cn(

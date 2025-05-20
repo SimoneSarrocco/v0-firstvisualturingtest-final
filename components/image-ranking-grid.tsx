@@ -240,8 +240,16 @@ export function ImageRankingGrid({ inputImage, models, onSubmit, initialRanking 
                 className={cn("flex flex-col", gridColSpan, marginLeft)}
                 style={{ gridColumn: index === 3 ? "span 1 / span 1" : "" }}
               >
-                <div className={cn("p-1 text-center text-xs font-medium rounded-t-md", bgColorClass, textColorClass)}>
-                  Rank {index + 1}
+                <div className="p-1 text-center text-xs font-semibold rounded-t-md bg-gray-50 text-gray-700">
+                  {index === 0
+                    ? "Best"
+                    : index === 1
+                      ? "2nd Best"
+                      : index === 2
+                        ? "3rd Best"
+                        : index === 3
+                          ? "4th Best"
+                          : "Worst"}
                 </div>
                 <div
                   className={cn(

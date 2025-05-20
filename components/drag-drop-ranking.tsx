@@ -187,8 +187,16 @@ function RankSlot({ position, children, isEmpty }) {
 
   return (
     <div className="flex flex-col space-y-0">
-      <div className={cn("p-2 text-center font-medium rounded-t-md", bgColorClass, textColorClass)}>
-        Rank {position + 1}
+      <div className="p-2 text-center font-semibold rounded-t-md bg-gray-50 text-gray-700">
+        {position === 0
+          ? "Best"
+          : position === 1
+            ? "2nd Best"
+            : position === 2
+              ? "3rd Best"
+              : position === 3
+                ? "4th Best"
+                : "Worst"}
       </div>
       <div
         className={cn(
