@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase-client"
 
 // Define full model names with abbreviations
 const MODEL_FULL_NAMES: Record<string, string> = {
-  DDPM_new: "Denoising Diffusion Probabilistic Model",
+  DDPM_5th: "Denoising Diffusion Probabilistic Model",
   VQGAN: "Vector-Quantized GAN",
   UNET: "U-Net",
   Pix2Pix: "Pix2Pix",
@@ -110,7 +110,7 @@ export default function ThankYouPage() {
   // Calculate results from Supabase data
   const calculateResultsFromSupabase = (rankings: Record<number, string[]>) => {
     try {
-      const models = ["DDPM_new", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+      const models = ["DDPM_5th", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
 
       // Initialize model stats
       const modelStats: Record<string, { totalRank: number; count: number }> = {}
@@ -146,7 +146,7 @@ export default function ThankYouPage() {
   const calculateResults = (rankingsJson: string) => {
     try {
       const rankings = JSON.parse(rankingsJson)
-      const models = ["DDPM_new", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+      const models = ["DDPM_5th", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
 
       // Initialize model stats
       const modelStats: Record<string, { totalRank: number; count: number }> = {}
