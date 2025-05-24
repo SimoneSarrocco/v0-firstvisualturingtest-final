@@ -7,14 +7,14 @@ export const formatRankingsForExport = (
   testSequence: number[] = [],
 ) => {
   // Create a mapping of imageId to question number (1-based index)
-  const questionNumberMap = {}
+  const questionNumberMap: Record<number, number> = {}
   testSequence.forEach((imageId, index) => {
     questionNumberMap[imageId] = index + 1
   })
 
   const timestamp = new Date().toISOString()
 
-  return Object.entries(rankings).map(([imageId, modelRanking]) => {
+  const formattedData = Object.entries(rankings).map(([imageId, modelRanking]) => {
     // Get the question number from our mapping (1-based index)
     const questionNumber = questionNumberMap[Number.parseInt(imageId)] || 0
 
@@ -24,22 +24,20 @@ export const formatRankingsForExport = (
       clinician_institution: clinicianData.institution || "Not specified",
       clinician_experience: clinicianData.experience || "unknown",
       clinician_created_at: clinicianData.created_at || timestamp,
+      question_number: questionNumber,
       image_id: imageId,
       model_rankings: JSON.stringify(modelRanking),
       model_sequence: JSON.stringify(modelSequences[imageId] || []),
-      question_number: questionNumber,
       submitted_at: timestamp,
     }
   })
+
+  // Sort by question number (ascending order)
+  return formattedData.sort((a, b) => a.question_number - b.question_number)
 }
 
 // Helper function to create CSV content
 export const createCSV = (headers: string[], data: any[]) => {
-  // Add question_number to headers if not already present
-  if (!headers.includes("question_number")) {
-    headers.push("question_number")
-  }
-
   const headerRow = headers.join(",")
   const rows = data.map((item) => {
     return headers
@@ -75,3 +73,6 @@ export const downloadCSV = (csvContent: string, filename: string) => {
   link.click()
   document.body.removeChild(link)
 }
+
+// Alias for backward compatibility
+export const createCSVContent = createCSV

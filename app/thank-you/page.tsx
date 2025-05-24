@@ -187,6 +187,7 @@ export default function ThankYouPage() {
       // Get data from session storage
       const rankings = sessionStorage.getItem("rankings")
       const modelSequences = sessionStorage.getItem("modelSequences")
+      const testSequence = sessionStorage.getItem("testSequence")
       const storedClinicianId = sessionStorage.getItem("clinicianId")
 
       if (!rankings || !storedClinicianId) {
@@ -197,6 +198,7 @@ export default function ThankYouPage() {
       // Parse the rankings
       const parsedRankings = JSON.parse(rankings)
       const parsedModelSequences = modelSequences ? JSON.parse(modelSequences) : {}
+      const parsedTestSequence = testSequence ? JSON.parse(testSequence) : []
 
       // Get clinician data
       const clinicianData = {
@@ -213,6 +215,7 @@ export default function ThankYouPage() {
         parsedModelSequences,
         storedClinicianId,
         clinicianData,
+        parsedTestSequence,
       )
 
       // Define headers for the combined CSV
@@ -222,6 +225,7 @@ export default function ThankYouPage() {
         "clinician_institution",
         "clinician_experience",
         "clinician_created_at",
+        "question_number",
         "image_id",
         "model_rankings",
         "model_sequence",
@@ -280,7 +284,7 @@ export default function ThankYouPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] py-10 px-4">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-lg">
         <Card className="modern-card card-hover">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -328,7 +332,16 @@ export default function ThankYouPage() {
                   averaging method:
                 </p>
 
-                <div className="space-y-4 mt-6">
+                {/* Moved explanation text above the rankings */}
+                <div className="text-sm text-gray-600 mb-6 text-center bg-white p-3 rounded border">
+                  <p className="font-medium">Based on your evaluations</p>
+                  <p className="mt-1">Lower rank numbers indicate better performance/placement</p>
+                  <p className="mt-2 text-blue-600 font-medium">
+                    See how AI models performed compared to signal averaging!
+                  </p>
+                </div>
+
+                <div className="space-y-4">
                   {modelRankings.map((model, index) => (
                     <div key={model.model} className="relative">
                       {/* Position badge */}
@@ -383,14 +396,6 @@ export default function ThankYouPage() {
                       </div>
                     </div>
                   ))}
-                </div>
-
-                <div className="text-sm text-gray-600 mt-4 text-center">
-                  <p>Based on your evaluations</p>
-                  <p className="mt-1 font-medium">Lower rank numbers indicate better performance</p>
-                  <p className="mt-2 text-blue-600 font-medium">
-                    See how AI models performed compared to signal averaging!
-                  </p>
                 </div>
               </div>
             ) : (
