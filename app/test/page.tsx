@@ -75,6 +75,20 @@ const getRandomOrder = (array, seed) => {
   return newArray
 }
 
+// Generate the original model sequence for a question if it doesn't exist
+const getOriginalModelSequence = (imageId) => {
+  // If we already have a stored sequence for this image, use it
+  const modelSequences = {} // Declare modelSequences variable here
+  if (modelSequences[imageId]) {
+    return modelSequences[imageId]
+  }
+
+  // Otherwise, generate a deterministic random order based on the image ID
+  // Make sure we're using the full models array with all 6 models including TARGET
+  const seed = imageId * 9301 + 49297
+  return getRandomOrder([...models], seed)
+}
+
 export default function TestPage() {
   const router = useRouter()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -325,18 +339,6 @@ export default function TestPage() {
 
   const progress = testSequence.length > 0 ? (completedQuestions.size / testSequence.length) * 100 : 0
 
-  // Generate the original model sequence for a question if it doesn't exist
-  const getOriginalModelSequence = (imageId) => {
-    // If we already have a stored sequence for this image, use it
-    if (modelSequences[imageId]) {
-      return modelSequences[imageId]
-    }
-
-    // Otherwise, generate a deterministic random order based on the image ID
-    const seed = imageId * 9301 + 49297
-    return getRandomOrder([...models], seed)
-  }
-
   // Retry Supabase connection
   const retrySupabaseConnection = async () => {
     setRetryingConnection(true)
@@ -419,6 +421,12 @@ export default function TestPage() {
 
   // Handle ranking submission for current image
   const handleRankingSubmit = (modelOrder, originalSequence) => {
+    // Debug logging to track TARGET model
+    console.log("Submitting ranking for image:", currentImage)
+    console.log("Model order:", modelOrder)
+    console.log("Original sequence:", originalSequence)
+    console.log("Contains TARGET:", modelOrder.includes("TARGET") && originalSequence.includes("TARGET"))
+
     // Store the final ranking (what the user submitted)
     const newRankings = {
       ...rankings,
