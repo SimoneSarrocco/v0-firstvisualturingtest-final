@@ -27,9 +27,9 @@ export default function Home() {
                 results.
               </p>
               <p>
-                In this test, you will be shown 10 low-quality vitreous OCT images. For each image, you will see 5
-                enhanced versions created by 5 different AI models. Your task is to rank these enhanced images from best
-                to worst based on your clinical judgment.
+                In this test, you will be shown 10 low-quality vitreous OCT images. For each image, you will see 6
+                enhanced versions created by 5 different AI models plus the true high-quality version. Your task is to
+                rank these enhanced images from best to worst based on your clinical judgment.
               </p>
               <p className="text-center text-sm text-gray-500 italic">
                 The test will take approximately 10-15 minutes to complete. Your responses will be anonymized and used
@@ -44,7 +44,7 @@ export default function Home() {
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-4">
               <div className="relative w-full">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 items-start">
                   <div className="flex flex-col items-center">
                     <span className="text-sm text-gray-600 mb-1">Original Low-Quality Image</span>
                     <div className="relative border border-gray-200 rounded-md overflow-hidden w-full aspect-[3/2]">
