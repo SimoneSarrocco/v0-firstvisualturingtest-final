@@ -15,7 +15,7 @@ import {
 import { ImageComparisonRanking } from "@/components/image-comparison-ranking"
 
 // Define model types for practice
-const models = ["DDPM_5th", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+const models = ["DDPM_7th_new", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
 
 // Use a fixed practice image
 const practiceImage = 42 // Example image number
