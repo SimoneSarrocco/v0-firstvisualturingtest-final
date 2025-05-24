@@ -367,7 +367,7 @@ export function ImageComparisonRanking({
             {selectedModel ? (
               <div
                 className={cn(
-                  "relative border-4 rounded-md overflow-hidden cursor-pointer bg-black",
+                  "relative border-8 rounded-md overflow-hidden cursor-pointer bg-black", // Changed from border-4 to border-8
                   "border-purple-500", // Purple border to match selection
                 )}
                 onClick={() => handleViewFullImage(selectedModel)}
@@ -464,10 +464,10 @@ export function ImageComparisonRanking({
                 <div
                   className={cn(
                     "relative border-2 rounded-b-md overflow-hidden cursor-pointer transition-all",
-                    borderColorClass,
+                    "border-gray-300", // Simple gray border instead of colored ones
                     isDragging ? "opacity-50" : "opacity-100",
                     isDragOver ? "border-blue-500 border-dashed" : "",
-                    selectedModel === model ? "ring-4 ring-purple-500 ring-offset-1" : "",
+                    selectedModel === model ? "ring-4 ring-purple-500 ring-offset-2 border-purple-500" : "", // More prominent purple selection
                   )}
                   onClick={() => handleModelClick(model)}
                 >

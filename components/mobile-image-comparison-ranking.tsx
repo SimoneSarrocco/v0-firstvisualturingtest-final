@@ -328,7 +328,7 @@ export function MobileImageComparisonRanking({
             {selectedModel ? (
               <div
                 className={cn(
-                  "relative border-4 rounded-md overflow-hidden cursor-pointer bg-black w-full",
+                  "relative border-6 rounded-md overflow-hidden cursor-pointer bg-black w-full", // Changed from border-4 to border-6
                   "border-purple-500", // Purple border to match selection
                 )}
                 onClick={() => handleViewFullImage(selectedModel)}
@@ -417,8 +417,8 @@ export function MobileImageComparisonRanking({
                 <div
                   className={cn(
                     "border-2 rounded-b-md overflow-hidden",
-                    borderColorClass,
-                    isSelected ? "ring-2 ring-inset ring-purple-500" : "",
+                    "border-gray-300", // Simple gray border instead of colored ones
+                    isSelected ? "ring-4 ring-purple-500 ring-offset-2" : "", // Swap mode selection
                     swapMode && !isSelected ? "opacity-70" : "",
                   )}
                 >
@@ -427,7 +427,9 @@ export function MobileImageComparisonRanking({
                     <div
                       className={cn(
                         "relative overflow-hidden flex-grow bg-white",
-                        selectedModel === model ? "ring-1 ring-inset ring-blue-400" : "",
+                        selectedModel === model
+                          ? "ring-6 ring-purple-500 ring-offset-2 ring-inset border-4 border-purple-500"
+                          : "border border-gray-200", // Much more prominent selection
                       )}
                       style={{ height: "140px" }}
                       onClick={() => handleModelClick(model)}
