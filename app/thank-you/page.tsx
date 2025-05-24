@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { CheckCircle, Download, Mail, Trophy, Medal } from "lucide-react"
+import { CheckCircle, Download, Mail, Trophy, Medal, Target, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatRankingsForExport, createCSV, downloadCSV } from "@/lib/export-utils"
@@ -15,6 +15,7 @@ const MODEL_FULL_NAMES: Record<string, string> = {
   UNET: "U-Net",
   Pix2Pix: "Pix2Pix",
   BBDM: "Brownian-Bridge Diffusion Model",
+  TARGET: "True High-Quality (Signal Averaging)",
 }
 
 interface ModelRanking {
@@ -110,7 +111,7 @@ export default function ThankYouPage() {
   // Calculate results from Supabase data
   const calculateResultsFromSupabase = (rankings: Record<number, string[]>) => {
     try {
-      const models = ["DDPM_7th_new", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+      const models = ["DDPM_7th_new", "VQGAN", "UNET", "Pix2Pix", "BBDM", "TARGET"]
 
       // Initialize model stats
       const modelStats: Record<string, { totalRank: number; count: number }> = {}
@@ -146,7 +147,7 @@ export default function ThankYouPage() {
   const calculateResults = (rankingsJson: string) => {
     try {
       const rankings = JSON.parse(rankingsJson)
-      const models = ["DDPM_7th_new", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+      const models = ["DDPM_7th_new", "VQGAN", "UNET", "Pix2Pix", "BBDM", "TARGET"]
 
       // Initialize model stats
       const modelStats: Record<string, { totalRank: number; count: number }> = {}
@@ -255,7 +256,8 @@ export default function ThankYouPage() {
     if (rank <= 2.5) return "bg-green-500"
     if (rank <= 3.5) return "bg-amber-500"
     if (rank <= 4.5) return "bg-orange-500"
-    return "bg-red-500"
+    if (rank <= 5.5) return "bg-red-500"
+    return "bg-red-600"
   }
 
   // Get text color based on average rank
@@ -264,8 +266,12 @@ export default function ThankYouPage() {
     if (rank <= 2.5) return "text-green-700"
     if (rank <= 3.5) return "text-amber-700"
     if (rank <= 4.5) return "text-orange-700"
-    return "text-red-700"
+    if (rank <= 5.5) return "text-red-700"
+    return "text-red-800"
   }
+
+  // Check if model is TARGET
+  const isTargetModel = (model: string) => model === "TARGET"
 
   // Don't render anything during SSR
   if (!isMounted) {
@@ -274,7 +280,7 @@ export default function ThankYouPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] py-10 px-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-2xl">
         <Card className="modern-card card-hover">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -289,8 +295,24 @@ export default function ThankYouPage() {
               Your evaluation has been successfully submitted. We greatly appreciate your participation in this clinical
               study.
             </p>
+
+            {/* Revelation about the TARGET image */}
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-center mb-2">
+                <Target className="h-5 w-5 text-blue-600 mr-2" />
+                <h3 className="text-lg font-medium text-blue-800">Study Revelation</h3>
+              </div>
+              <p className="text-blue-700 text-sm leading-relaxed">
+                One of the 6 images you ranked was actually the <strong>"true" high-quality OCT image</strong> obtained
+                by averaging the signal of 10 consecutive ART10 images acquired at the same eye location. This signal
+                averaging approach is currently the standard practice for generating high-quality OCT images in clinical
+                settings.
+              </p>
+            </div>
+
             <p className="mt-4 text-gray-700">
-              Your expert feedback will help us improve deep learning models for OCT image enhancement.
+              Your expert feedback will help us understand how AI-generated enhancements compare to the current gold
+              standard of signal averaging.
             </p>
 
             {/* Results Summary - Always show if we have rankings */}
@@ -302,10 +324,11 @@ export default function ThankYouPage() {
               <div className="mt-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <h3 className="text-lg font-medium mb-2 text-blue-600">Your Evaluation Results</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Based on your rankings, here's how you rated the different deep learning models:
+                  Based on your rankings, here's how you rated the different approaches including the standard signal
+                  averaging method:
                 </p>
 
-                <div className="space-y-6 mt-6">
+                <div className="space-y-4 mt-6">
                   {modelRankings.map((model, index) => (
                     <div key={model.model} className="relative">
                       {/* Position badge */}
@@ -313,12 +336,25 @@ export default function ThankYouPage() {
                         {index < 3 && <div className="rounded-full bg-white p-1 shadow-md">{getMedalIcon(index)}</div>}
                       </div>
 
-                      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                      <div
+                        className={`rounded-lg shadow-sm border overflow-hidden ${
+                          isTargetModel(model.model)
+                            ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300"
+                            : "bg-white border-gray-200"
+                        }`}
+                      >
                         <div className="p-3 flex justify-between items-center border-b border-gray-100">
                           <div className="font-medium flex items-center text-gray-700">
                             <span className="mr-2">{index + 1}.</span>
-                            {/* Show only the full model name */}
-                            <span>{MODEL_FULL_NAMES[model.model]}</span>
+                            {isTargetModel(model.model) && <Zap className="h-4 w-4 text-blue-600 mr-2" />}
+                            <span className={isTargetModel(model.model) ? "text-blue-800 font-semibold" : ""}>
+                              {MODEL_FULL_NAMES[model.model]}
+                            </span>
+                            {isTargetModel(model.model) && (
+                              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                                Current Standard
+                              </span>
+                            )}
                           </div>
                           <div className={`font-bold text-lg ${getTextColor(model.averageRank)}`}>
                             {model.averageRank.toFixed(2)}
@@ -329,10 +365,10 @@ export default function ThankYouPage() {
                           <div className="flex items-center">
                             <div className="text-sm font-medium mr-3 w-16 text-gray-600">Rank:</div>
                             <div className="flex-1 bg-gray-200 h-6 rounded-full overflow-hidden">
-                              {/* Rank bar - width is percentage of max rank (5) */}
+                              {/* Rank bar - width is percentage of max rank (6) */}
                               <div
                                 className={`h-full ${getRankColor(model.averageRank)} flex items-center justify-center text-white text-xs font-bold`}
-                                style={{ width: `${(model.averageRank / 5) * 100}%` }}
+                                style={{ width: `${(model.averageRank / 6) * 100}%` }}
                               >
                                 {model.averageRank.toFixed(1)}
                               </div>
@@ -341,7 +377,7 @@ export default function ThankYouPage() {
 
                           <div className="flex justify-between text-xs text-gray-500 mt-1">
                             <div>Best (1.0)</div>
-                            <div>Worst (5.0)</div>
+                            <div>Worst (6.0)</div>
                           </div>
                         </div>
                       </div>
@@ -352,6 +388,9 @@ export default function ThankYouPage() {
                 <div className="text-sm text-gray-600 mt-4 text-center">
                   <p>Based on your evaluations</p>
                   <p className="mt-1 font-medium">Lower rank numbers indicate better performance</p>
+                  <p className="mt-2 text-blue-600 font-medium">
+                    See how AI models performed compared to signal averaging!
+                  </p>
                 </div>
               </div>
             ) : (
