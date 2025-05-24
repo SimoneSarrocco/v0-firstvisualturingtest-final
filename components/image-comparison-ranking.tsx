@@ -24,6 +24,8 @@ const getBorderColorClass = (position: number): string => {
       return "border-amber-500"
     case 4: // Rank 5 (Worst)
       return "border-red-500"
+    case 5: // Rank 6 (Worst)
+      return "border-red-600"
     default:
       return "border-gray-200"
   }
@@ -42,6 +44,8 @@ const getTextColorClass = (position: number): string => {
       return "text-amber-600"
     case 4: // Rank 5 (Worst)
       return "text-red-600"
+    case 5: // Rank 6 (Worst)
+      return "text-red-700"
     default:
       return "text-gray-600"
   }
@@ -60,6 +64,8 @@ const getBgColorClass = (position: number): string => {
       return "bg-amber-50"
     case 4: // Rank 5 (Worst)
       return "bg-red-50"
+    case 5: // Rank 6 (Worst)
+      return "bg-red-100"
     default:
       return "bg-gray-50"
   }
@@ -153,10 +159,10 @@ export function ImageComparisonRanking({
       // Store the original sequence
       setOriginalSequence(sequence)
 
-      // Assign letters A-E to models based on their position in the original sequence
+      // Assign letters A-F to models based on their position in the original sequence
       const letters: Record<string, string> = {}
       sequence.forEach((model, index) => {
-        letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
+        letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E, F
       })
       setModelLetters(letters)
 
@@ -194,6 +200,9 @@ export function ImageComparisonRanking({
     if (model === null) {
       // Input image
       return `${inputImage}.png`
+    } else if (model === "TARGET") {
+      // Target image
+      return `${inputImage}.png`
     } else if (model === "BBDM") {
       // BBDM uses x_{index}_0.png format (0-indexed)
       return `x_${inputImage - 1}_0.png`
@@ -208,6 +217,9 @@ export function ImageComparisonRanking({
     if (model === null) {
       // Input image
       return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/${getImageFilename(null)}`
+    } else if (model === "TARGET") {
+      // Target image
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/targets/${getImageFilename(model)}`
     } else {
       // Model image
       return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}/${getImageFilename(model)}`
@@ -354,7 +366,10 @@ export function ImageComparisonRanking({
             </h3>
             {selectedModel ? (
               <div
-                className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
+                className={cn(
+                  "relative border-4 rounded-md overflow-hidden cursor-pointer bg-black",
+                  "border-purple-500", // Purple border to match selection
+                )}
                 onClick={() => handleViewFullImage(selectedModel)}
                 style={{ width: "768px", height: "496px" }}
               >
@@ -423,7 +438,7 @@ export function ImageComparisonRanking({
             return (
               <div
                 key={model}
-                className="flex flex-col w-[calc(20%-8px)]"
+                className="flex flex-col w-[calc(16.666%-8px)]" // Changed from 20% to 16.666% for 6 columns
                 draggable
                 onDragStart={() => handleDragStart(model)}
                 onDragOver={(e) => handleDragOver(e, index)}
@@ -442,7 +457,9 @@ export function ImageComparisonRanking({
                         ? "3rd Best"
                         : index === 3
                           ? "4th Best"
-                          : "Worst"}
+                          : index === 4
+                            ? "5th Best"
+                            : "Worst"}
                 </div>
                 <div
                   className={cn(

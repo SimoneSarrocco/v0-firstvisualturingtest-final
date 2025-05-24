@@ -24,7 +24,7 @@ import {
 import { testSupabaseConnection, saveRankingsToSupabase, hasSupabaseEnvVars } from "@/lib/supabase-utils"
 
 // Define model types - but don't show their names to users
-const models = ["DDPM_7th_new", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+const models = ["DDPM_7th_new", "VQGAN", "UNET", "Pix2Pix", "BBDM", "TARGET"]
 
 // Generate test sequence - consistently select 10 random sets out of 17
 const generateTestSequence = () => {

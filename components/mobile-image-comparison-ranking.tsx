@@ -22,6 +22,8 @@ const getBorderColorClass = (position: number): string => {
       return "border-amber-500"
     case 4: // Rank 5 (Worst)
       return "border-red-500"
+    case 5: // Rank 6 (Worst)
+      return "border-red-600"
     default:
       return "border-gray-200"
   }
@@ -40,6 +42,8 @@ const getTextColorClass = (position: number): string => {
       return "text-amber-600"
     case 4: // Rank 5 (Worst)
       return "text-red-600"
+    case 5: // Rank 6 (Worst)
+      return "text-red-700"
     default:
       return "text-gray-600"
   }
@@ -58,6 +62,8 @@ const getBgColorClass = (position: number): string => {
       return "bg-amber-50"
     case 4: // Rank 5 (Worst)
       return "bg-red-50"
+    case 5: // Rank 6 (Worst)
+      return "bg-red-100"
     default:
       return "bg-gray-50"
   }
@@ -151,10 +157,10 @@ export function MobileImageComparisonRanking({
       // Store the original sequence
       setOriginalSequence(sequence)
 
-      // Assign letters A-E to models based on their position in the original sequence
+      // Assign letters A-F to models based on their position in the original sequence
       const letters: Record<string, string> = {}
       sequence.forEach((model, index) => {
-        letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E
+        letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E, F
       })
       setModelLetters(letters)
 
@@ -178,6 +184,9 @@ export function MobileImageComparisonRanking({
     if (model === null) {
       // Input image
       return `${inputImage}.png`
+    } else if (model === "TARGET") {
+      // Target image
+      return `${inputImage}.png`
     } else if (model === "BBDM") {
       // BBDM uses x_{index}_0.png format (0-indexed)
       return `x_${inputImage - 1}_0.png`
@@ -192,6 +201,9 @@ export function MobileImageComparisonRanking({
     if (model === null) {
       // Input image
       return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/${getImageFilename(null)}`
+    } else if (model === "TARGET") {
+      // Target image
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/targets/${getImageFilename(model)}`
     } else {
       // Model image
       return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}/${getImageFilename(model)}`
@@ -267,7 +279,7 @@ export function MobileImageComparisonRanking({
       <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-1">
         <p className="text-blue-800 font-medium text-sm">
           Tap an AI-enhanced image to compare it with the low-quality original. Rank the enhanced images from best (1)
-          to worst (5) by tapping the letter labels to swap their positions.
+          to worst (6) by tapping the letter labels to swap their positions.
         </p>
       </div>
 
@@ -315,7 +327,10 @@ export function MobileImageComparisonRanking({
             </h3>
             {selectedModel ? (
               <div
-                className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
+                className={cn(
+                  "relative border-4 rounded-md overflow-hidden cursor-pointer bg-black",
+                  "border-purple-500", // Purple border to match selection
+                )}
                 onClick={() => handleViewFullImage(selectedModel)}
                 style={{ width: "100%", height: "auto", aspectRatio: "1.55/1" }}
               >
@@ -395,7 +410,9 @@ export function MobileImageComparisonRanking({
                         ? "3rd Best"
                         : index === 3
                           ? "4th Best"
-                          : "Worst"}
+                          : index === 4
+                            ? "5th Best"
+                            : "Worst"}
                 </div>
                 <div
                   className={cn(
