@@ -28,7 +28,7 @@ export default function Home() {
               </p>
               <p>
                 In this test, you will be shown 10 low-quality vitreous OCT images. For each image, you will see 6
-                enhanced versions created by 5 different AI models plus the true high-quality version. Your task is to
+                enhanced versions created by different AI models. Your task is to
                 rank these enhanced images from best to worst based on your clinical judgment.
               </p>
               <p className="text-center text-sm text-gray-500 italic">
@@ -50,7 +50,7 @@ export default function Home() {
                     <div className="relative border border-gray-200 rounded-md overflow-hidden w-full aspect-[3/2]">
                       <Image
                         src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/1.png"
-                        alt="Example of a low-quality vitreous OCT image"
+                        alt="Example of a low-quality vitreous OCT image (ART10)"
                         fill
                         className="object-cover"
                       />
@@ -61,7 +61,7 @@ export default function Home() {
                     <div className="relative border border-gray-200 rounded-md overflow-hidden w-full aspect-[3/2]">
                       <Image
                         src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/BBDM/x_0_0.png"
-                        alt="Example of an enhanced vitreous OCT image"
+                        alt="Example of an AI-generated enhanced version"
                         fill
                         className="object-cover"
                       />
