@@ -332,15 +332,6 @@ export default function ThankYouPage() {
                   averaging method:
                 </p>
 
-                {/* Moved explanation text above the rankings */}
-                <div className="text-sm text-gray-600 mb-6 text-center bg-white p-3 rounded border">
-                  <p className="font-medium">Based on your evaluations</p>
-                  <p className="mt-1">Lower rank numbers indicate better performance/placement</p>
-                  <p className="mt-2 text-blue-600 font-medium">
-                    See how AI models performed compared to signal averaging!
-                  </p>
-                </div>
-
                 <div className="space-y-4">
                   {modelRankings.map((model, index) => (
                     <div key={model.model} className="relative">
