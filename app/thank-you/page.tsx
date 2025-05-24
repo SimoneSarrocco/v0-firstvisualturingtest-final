@@ -188,6 +188,8 @@ export default function ThankYouPage() {
       const rankings = sessionStorage.getItem("rankings")
       const modelSequences = sessionStorage.getItem("modelSequences")
       const testSequence = sessionStorage.getItem("testSequence")
+      console.log("Retrieved testSequence:", testSequence)
+      console.log("Parsed testSequence:", testSequence ? JSON.parse(testSequence) : [])
       const storedClinicianId = sessionStorage.getItem("clinicianId")
 
       if (!rankings || !storedClinicianId) {
@@ -327,19 +329,10 @@ export default function ThankYouPage() {
             ) : modelRankings.length > 0 ? (
               <div className="mt-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <h3 className="text-lg font-medium mb-2 text-blue-600">Your Evaluation Results</h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 mb-6">
                   Based on your rankings, here's how you rated the different approaches including the standard signal
                   averaging method:
                 </p>
-
-                {/* Moved explanation text above the rankings */}
-                <div className="text-sm text-gray-600 mb-6 text-center bg-white p-3 rounded border">
-                  <p className="font-medium">Based on your evaluations</p>
-                  <p className="mt-1">Lower rank numbers indicate better performance/placement</p>
-                  <p className="mt-2 text-blue-600 font-medium">
-                    See how AI models performed compared to signal averaging!
-                  </p>
-                </div>
 
                 <div className="space-y-4">
                   {modelRankings.map((model, index) => (
