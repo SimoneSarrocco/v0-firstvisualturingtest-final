@@ -3,9 +3,8 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ZoomIn, FlipVerticalIcon as SwapVertical } from "lucide-react"
+import { ZoomIn, FlipVerticalIcon as SwapVertical, InfoIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ImageViewer } from "./image-viewer"
 
@@ -276,11 +275,19 @@ export function MobileImageComparisonRanking({
   return (
     <div className="flex flex-col space-y-3 w-full px-2">
       {/* Instructions - Made more prominent but compact */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-2">
-        <p className="text-blue-800 font-medium text-sm">
-          Tap an AI-enhanced image to compare it with the low-quality original. Rank the enhanced images from best (1)
-          to worst (6) by tapping the letter labels to swap their positions.
-        </p>
+      <div className="mb-3">
+        <details className="bg-blue-50 border border-blue-200 rounded-md overflow-hidden">
+          <summary className="p-2 font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors flex items-center">
+            <InfoIcon className="h-4 w-4 mr-2" /> Instructions (click to expand)
+          </summary>
+          <div className="p-3 pt-1 text-sm border-t border-blue-200">
+            <ul className="text-blue-800 space-y-2 list-disc list-inside">
+              <li>Tap any image below to view it in the comparison area</li>
+              <li>Rank images from best to worst by tapping one letter then another to swap positions</li>
+              <li>Tap "Submit Ranking" when you're satisfied with your ordering</li>
+            </ul>
+          </div>
+        </details>
       </div>
 
       {/* Main comparison area with dotted border and label - more compact */}
@@ -291,70 +298,70 @@ export function MobileImageComparisonRanking({
         <div className="flex flex-col gap-3">
           {/* Original image on the top */}
           <div className="space-y-2">
-            <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 bg-gray-100 hover:bg-gray-200"
+                onClick={(e) => handleViewFullImage(null, e)}
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
             <div
               className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black w-full"
               onClick={() => handleViewFullImage(null)}
               style={{ aspectRatio: "1.55/1" }}
             >
-              <Image
+              {/* Using a regular img tag for mobile */}
+              <img
                 src={getImageSrc(null) || "/placeholder.svg"}
                 alt="Low-quality OCT image"
-                fill
-                style={{ objectFit: "contain" }}
-                unoptimized
+                className="w-full h-full object-contain"
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleViewFullImage(null, e)
-                }}
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
             </div>
           </div>
 
           {/* Selected model image on the bottom */}
           <div className="space-y-2">
-            <h3 className="font-medium text-sm">
-              {selectedModel
-                ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
-                : "Tap an image below to compare:"}
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-sm">
+                {selectedModel
+                  ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
+                  : "Tap an image below to compare:"}
+              </h3>
+              {selectedModel && (
+                <div className="flex items-center gap-2">
+                  <span className="bg-white px-2 py-1 text-sm font-bold rounded border border-gray-300">
+                    {modelLetters[selectedModel]}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 bg-gray-100 hover:bg-gray-200"
+                    onClick={(e) => handleViewFullImage(selectedModel, e)}
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
             {selectedModel ? (
               <div
-                className={cn(
-                  "relative border-6 rounded-md overflow-hidden cursor-pointer bg-black w-full", // Changed from border-4 to border-6
-                  "border-purple-500", // Purple border to match selection
-                )}
+                className="relative rounded-md overflow-hidden cursor-pointer bg-black w-full"
                 onClick={() => handleViewFullImage(selectedModel)}
                 style={{ aspectRatio: "1.55/1" }}
               >
-                <Image
+                {/* Purple highlight border - made more visible */}
+                <div className="absolute inset-0 border-4 border-purple-500 rounded-md pointer-events-none z-10"></div>
+
+                {/* Using a regular img tag for mobile */}
+                <img
                   src={getImageSrc(selectedModel) || "/placeholder.svg"}
                   alt={`Enhanced Image ${modelLetters[selectedModel]}`}
-                  fill
-                  style={{ objectFit: "contain" }}
-                  unoptimized
+                  className="w-full h-full object-contain"
                 />
-                <div className="absolute top-1 left-1 bg-white/80 px-2 py-1 text-sm font-bold rounded">
-                  {modelLetters[selectedModel]}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleViewFullImage(selectedModel, e)
-                  }}
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </Button>
               </div>
             ) : (
               <div
@@ -384,8 +391,9 @@ export function MobileImageComparisonRanking({
           <h3 className="font-medium text-base">Rank Enhanced Images:</h3>
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
-          <p className="text-amber-800 font-medium text-sm">
+        {/* Changed from amber to blue to match instructions */}
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
+          <p className="text-blue-800 font-medium text-sm">
             Tap any image to view it in the comparison area above. Tap one letter and then another to swap their
             positions.
           </p>
@@ -398,6 +406,7 @@ export function MobileImageComparisonRanking({
             const textColorClass = getTextColorClass(index)
             const letter = modelLetters[model] || "?"
             const isSelected = swapSource === index
+            const isModelSelected = selectedModel === model
 
             return (
               <div key={model} className="flex flex-col w-full">
@@ -425,15 +434,15 @@ export function MobileImageComparisonRanking({
                   <div className="flex items-center">
                     {/* Image */}
                     <div
-                      className={cn(
-                        "relative overflow-hidden flex-grow bg-white",
-                        selectedModel === model
-                          ? "ring-6 ring-purple-500 ring-offset-2 ring-inset border-4 border-purple-500"
-                          : "border border-gray-200", // Much more prominent selection
-                      )}
+                      className="relative overflow-hidden flex-grow bg-white border border-gray-200"
                       style={{ height: "140px" }}
                       onClick={() => handleModelClick(model)}
                     >
+                      {/* Purple highlight border for selected image - made more visible */}
+                      {isModelSelected && (
+                        <div className="absolute inset-0 border-4 border-purple-500 rounded-md pointer-events-none z-10"></div>
+                      )}
+
                       <div className="w-full h-full flex items-center justify-center p-2">
                         <img
                           src={getImageSrc(model) || "/placeholder.svg"}

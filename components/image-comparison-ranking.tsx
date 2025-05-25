@@ -1,11 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useRef } from "react"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ZoomIn } from "lucide-react"
+import { ZoomIn, InfoIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ImageViewer } from "./image-viewer"
 import { useDeviceType } from "@/hooks/use-device-type"
@@ -226,9 +224,15 @@ export function ImageComparisonRanking({
     }
   }
 
-  // Handle drag start
-  const handleDragStart = (model: string) => {
-    setDraggedModel(model)
+  // Handle drag start - only for the image itself
+  const handleDragStart = (e: React.DragEvent, model: string) => {
+    // Only allow dragging the image itself, not the container
+    if ((e.target as HTMLElement).tagName === "IMG") {
+      setDraggedModel(model)
+    } else {
+      // Prevent dragging if not the image
+      e.preventDefault()
+    }
   }
 
   // Handle drag over
@@ -303,22 +307,23 @@ export function ImageComparisonRanking({
 
   return (
     <div className="flex flex-col space-y-3 w-full">
-      {/* Instructions - Made more prominent but compact */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-1">
-        <ul className="text-blue-800 font-medium text-sm list-disc list-inside space-y-1">
-          <li>
-            Click or drag an AI-enhanced image (from the section below) into the right side of the "Comparison Area" to
-            compare it side-by-side with the low-quality OCT image in their native resolution.
-          </li>
-          <li>
-            To compare two enhanced images in full resolution, click back and forth between the ones you want to compare
-            (from the section below) to spot any differences.
-          </li>
-          <li>
-            Rank the enhanced images from best (leftmost) to worst (rightmost), based on which ones you think are the
-            best enhanced versions of the low-quality image, by dragging them into order in the section below.
-          </li>
-        </ul>
+      {/* Collapsible Instructions - More compact and less intrusive */}
+      <div className="mb-3">
+        <details className="bg-blue-50 border border-blue-200 rounded-md overflow-hidden">
+          <summary className="p-2 font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors flex items-center">
+            <InfoIcon className="h-4 w-4 mr-2" /> Instructions (click to expand)
+          </summary>
+          <div className="p-3 pt-1 text-sm border-t border-blue-200">
+            <ul className="text-blue-800 space-y-2 list-disc list-inside">
+              <li>
+                Click or drag an AI-enhanced image (from the section below) into the comparison area to compare with the
+                low-quality image.
+              </li>
+              <li>Rank the enhanced images from best (left) to worst (right) by dragging them into order</li>
+              <li>Click "Submit Ranking" when you're satisfied with your ordering</li>
+            </ul>
+          </div>
+        </details>
       </div>
 
       {/* Main comparison area with dotted border and label - more compact */}
@@ -329,72 +334,75 @@ export function ImageComparisonRanking({
         <div className="flex flex-col xl:flex-row justify-center items-center xl:items-start gap-3">
           {/* Original image on the left */}
           <div className="space-y-1">
-            <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 bg-gray-100 hover:bg-gray-200"
+                onClick={(e) => handleViewFullImage(null, e)}
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
             <div
               className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
               onClick={() => handleViewFullImage(null)}
               style={{ width: "768px", height: "496px" }}
             >
-              <Image
+              {/* Using a regular img tag with fixed dimensions to ensure exact size */}
+              <img
                 src={getImageSrc(null) || "/placeholder.svg"}
                 alt="Low-quality OCT image"
-                width={768}
-                height={496}
-                style={{ objectFit: "none" }}
-                unoptimized
+                width="768"
+                height="496"
+                style={{ width: "768px", height: "496px", objectFit: "none" }}
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleViewFullImage(null, e)
-                }}
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
             </div>
           </div>
 
           {/* Selected model image on the right */}
           <div className="space-y-1" onDragOver={(e) => e.preventDefault()} onDrop={handleDropToComparison}>
-            <h3 className="font-medium text-sm">
-              {selectedModel
-                ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
-                : "Drag an image here to compare:"}
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-sm">
+                {selectedModel
+                  ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
+                  : "Drag an image here to compare:"}
+              </h3>
+              {selectedModel && (
+                <div className="flex items-center gap-2">
+                  <span className="bg-white px-2 py-1 text-sm font-bold rounded border border-gray-300">
+                    {modelLetters[selectedModel]}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 bg-gray-100 hover:bg-gray-200"
+                    onClick={(e) => handleViewFullImage(selectedModel, e)}
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
             {selectedModel ? (
               <div
-                className={cn(
-                  "relative border-8 rounded-md overflow-hidden cursor-pointer bg-black", // Changed from border-4 to border-8
-                  "border-purple-500", // Purple border to match selection
-                )}
+                className="relative rounded-md cursor-pointer bg-black p-1"
                 onClick={() => handleViewFullImage(selectedModel)}
-                style={{ width: "768px", height: "496px" }}
+                style={{ width: "776px", height: "504px" }}
               >
-                <Image
+                {/* Purple highlight border - positioned at the edge of the padding */}
+                <div className="absolute inset-0 border-4 border-purple-500 rounded-md pointer-events-none z-10"></div>
+
+                {/* Using a regular img tag with fixed dimensions to ensure exact size */}
+                <img
                   src={getImageSrc(selectedModel) || "/placeholder.svg"}
                   alt={`Enhanced Image ${modelLetters[selectedModel]}`}
-                  width={768}
-                  height={496}
-                  style={{ objectFit: "none" }}
-                  unoptimized
+                  width="768"
+                  height="496"
+                  className="rounded-sm"
+                  style={{ width: "768px", height: "496px", objectFit: "none" }}
                 />
-                <div className="absolute top-1 left-1 bg-white/80 px-2 py-1 text-sm font-bold rounded">
-                  {modelLetters[selectedModel]}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleViewFullImage(selectedModel, e)
-                  }}
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </Button>
               </div>
             ) : (
               <div
@@ -418,11 +426,12 @@ export function ImageComparisonRanking({
           </Button>
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-md p-2 mb-2">
-          <p className="text-amber-800 font-medium text-sm">
-            Drag images to reorder from best (left) to worst (right). Click any image to view it in the Comparison Area
-            above. If you are using a touchscreen, just click on the letters of the pair of images you want to swap
-            instead of drag-and-drop.
+        {/* Changed from amber to blue to match instructions */}
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-2">
+          <p className="text-blue-800 font-medium text-sm">
+            Drag images to reorder from best (left) to worst (right). Click any image to view it in full resolution in
+            the Comparison Area above. If you are using a touchscreen, just click on the letters of the pair of images
+            you want to swap instead of drag-and-drop.
           </p>
         </div>
 
@@ -434,19 +443,14 @@ export function ImageComparisonRanking({
             const isDragging = draggedModel === model
             const isDragOver = dragOverIndex === index
             const letter = modelLetters[model] || "?"
+            const isSelected = selectedModel === model
 
             return (
               <div
                 key={model}
                 className="flex flex-col w-[calc(16.666%-8px)]" // Changed from 20% to 16.666% for 6 columns
-                draggable
-                onDragStart={() => handleDragStart(model)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={(e) => handleDrop(e, index)}
-                onDragEnd={() => {
-                  setDraggedModel(null)
-                  setDragOverIndex(null)
-                }}
               >
                 <div className="p-1 text-center font-semibold rounded-t-md text-base bg-gray-50 text-gray-700">
                   {index === 0
@@ -461,26 +465,37 @@ export function ImageComparisonRanking({
                             ? "5th Best"
                             : "Worst"}
                 </div>
+                <div className="text-center mb-1">
+                  <span className="bg-white px-2 py-1 text-sm font-bold rounded border border-gray-300">{letter}</span>
+                </div>
                 <div
                   className={cn(
-                    "relative border-2 rounded-b-md overflow-hidden cursor-pointer transition-all",
+                    "relative border-2 rounded-md cursor-pointer transition-all p-1",
                     "border-gray-300", // Simple gray border instead of colored ones
                     isDragging ? "opacity-50" : "opacity-100",
                     isDragOver ? "border-blue-500 border-dashed" : "",
-                    selectedModel === model ? "ring-4 ring-purple-500 ring-offset-2 border-purple-500" : "", // More prominent purple selection
                   )}
                   onClick={() => handleModelClick(model)}
                 >
                   <div className="aspect-[1.55] relative">
-                    <Image
+                    {/* Purple highlight border for selected image - positioned at the edge of the padding */}
+                    {isSelected && (
+                      <div className="absolute inset-0 border-4 border-purple-500 rounded-md pointer-events-none z-10"></div>
+                    )}
+
+                    {/* Make only the image draggable, not the container */}
+                    <img
                       src={getImageSrc(model) || "/placeholder.svg"}
                       alt={`Enhanced Image ${letter}`}
-                      fill
-                      className="object-cover"
-                      unoptimized
+                      className="w-full h-full object-cover rounded-sm"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, model)}
+                      onDragEnd={() => {
+                        setDraggedModel(null)
+                        setDragOverIndex(null)
+                      }}
                     />
                   </div>
-                  <div className="absolute top-1 left-1 bg-white/80 px-2 py-1 text-sm font-bold rounded">{letter}</div>
                 </div>
               </div>
             )

@@ -735,7 +735,7 @@ export default function TestPage() {
               <span className="gradient-text">
                 Question {currentImageIndex + 1} of {testSequence.length}
               </span>
-              <span className="text-sm font-normal text-gray-500">Progress: {Math.round(progress)}%</span>
+              <span className="text-sm font-normal text-gray-500 ml-4">Progress: {Math.round(progress)}%</span>
             </CardTitle>
 
             {/* Question navigation - moved to header to save vertical space */}
