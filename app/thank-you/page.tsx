@@ -309,7 +309,7 @@ export default function ThankYouPage() {
               <p className="text-blue-700 text-sm leading-relaxed">
                 One of the 6 images you ranked was actually the <strong>"true" high-quality OCT image</strong> obtained
                 by averaging the signal of 10 consecutive ART10 images acquired at the same eye location. This signal
-                averaging approach is currently the standard practice for generating high-quality OCT images in clinical
+                averaging approach is currently a standard practice for generating high-quality OCT images in clinical
                 settings.
               </p>
             </div>
