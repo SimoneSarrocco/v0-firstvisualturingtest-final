@@ -335,7 +335,7 @@ export function ImageComparisonRanking({
           {/* Original image on the left */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
+              <h3 className="font-medium text-sm">Low-quality OCT Image (ART10):</h3>
               <Button
                 variant="ghost"
                 size="icon"
