@@ -137,7 +137,7 @@ export default function LoginPage() {
             <Eye className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">OCT Image Enhancement Study</h1>
-          <p className="text-gray-600">Help us evaluate AI-enhanced medical imaging quality</p>
+          <p className="text-gray-600">Help us evaluate the quality of AI-enhanced vitreous OCT images</p>
         </div>
 
         <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
