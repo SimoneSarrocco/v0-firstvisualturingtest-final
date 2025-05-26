@@ -9,6 +9,8 @@ const CLINICIAN_NAME_KEY = "oct_clinician_name"
 const CLINICIAN_INSTITUTION_KEY = "oct_clinician_institution"
 const CLINICIAN_EXPERIENCE_KEY = "oct_clinician_experience"
 const CLINICIAN_CREATED_AT_KEY = "oct_clinician_created_at"
+const CLINICIAN_SEX_KEY = "oct_clinician_sex"
+const CLINICIAN_AGE_KEY = "oct_clinician_age"
 const SUBMISSION_TIMESTAMP_KEY = "oct_submission_timestamp"
 const SESSION_ID_KEY = "oct_session_id"
 
@@ -152,6 +154,8 @@ export {
   CLINICIAN_INSTITUTION_KEY,
   CLINICIAN_EXPERIENCE_KEY,
   CLINICIAN_CREATED_AT_KEY,
+  CLINICIAN_SEX_KEY,
+  CLINICIAN_AGE_KEY,
   SUBMISSION_TIMESTAMP_KEY,
   SESSION_ID_KEY,
 }

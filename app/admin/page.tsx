@@ -14,7 +14,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState("")
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [rankings, setRankings] = useState<any[]>([])
-  const [clinicians, setClinicans] = useState<any[]>([])
+  const [clinicians, setClinicians] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
@@ -65,7 +65,7 @@ export default function AdminPage() {
           experience: normalizeExperienceValue(clinician.experience),
         })) || []
 
-      setClinicans(normalizedClinicians)
+      setClinicians(normalizedClinicians)
     } catch (error) {
       console.error("Error fetching data:", error)
       alert("Failed to fetch data")
@@ -107,6 +107,16 @@ export default function AdminPage() {
     return "unknown"
   }
 
+  // Categorize age into groups
+  const categorizeAge = (age: number | null): string => {
+    if (!age || age < 18) return "unknown"
+    if (age < 35) return "under_35"
+    if (age < 40) return "35_to_40"
+    if (age < 45) return "40_to_45"
+    if (age < 50) return "45_to_50"
+    return "50_plus"
+  }
+
   // Download results as CSV
   const downloadRankingsCSV = () => {
     // Format data as CSV
@@ -130,7 +140,7 @@ export default function AdminPage() {
   // Download clinicians as CSV
   const downloadCliniciansCSV = () => {
     // Format data as CSV
-    const headers = ["id", "name", "institution", "experience", "created_at"]
+    const headers = ["id", "name", "institution", "experience", "sex", "age", "created_at"]
     const csvRows = [
       headers.join(","), // Header row
       ...clinicians.map((clinician) =>
@@ -139,6 +149,8 @@ export default function AdminPage() {
           `"${clinician.name}"`, // Wrap in quotes to handle commas
           `"${clinician.institution}"`, // Wrap in quotes to handle commas
           clinician.experience,
+          clinician.sex || "",
+          clinician.age || "",
           clinician.created_at,
         ].join(","),
       ),
@@ -172,19 +184,39 @@ export default function AdminPage() {
       less_than_5: {},
       five_or_more: {},
     }
-    const models = ["DDPM", "VQGAN", "UNET", "Pix2Pix", "BBDM"]
+    const modelStatsBySex: Record<string, Record<string, { totalRank: number; count: number }>> = {
+      Male: {},
+      Female: {},
+    }
+    const modelStatsByAge: Record<string, Record<string, { totalRank: number; count: number }>> = {
+      under_35: {},
+      "35_to_40": {},
+      "40_to_45": {},
+      "45_to_50": {},
+      "50_plus": {},
+    }
+    const models = ["DDPM_7th_new", "VQGAN", "UNET", "Pix2Pix", "BBDM", "TARGET"]
 
     models.forEach((model) => {
       modelStats[model] = { totalRank: 0, count: 0 }
       modelStatsByExperience.less_than_5[model] = { totalRank: 0, count: 0 }
       modelStatsByExperience.five_or_more[model] = { totalRank: 0, count: 0 }
+      modelStatsBySex.Male[model] = { totalRank: 0, count: 0 }
+      modelStatsBySex.Female[model] = { totalRank: 0, count: 0 }
+      modelStatsByAge.under_35[model] = { totalRank: 0, count: 0 }
+      modelStatsByAge["35_to_40"][model] = { totalRank: 0, count: 0 }
+      modelStatsByAge["40_to_45"][model] = { totalRank: 0, count: 0 }
+      modelStatsByAge["45_to_50"][model] = { totalRank: 0, count: 0 }
+      modelStatsByAge["50_plus"][model] = { totalRank: 0, count: 0 }
     })
 
     // Calculate total rankings for each model
     rankings.forEach((ranking) => {
-      // Find the clinician to get their experience level
+      // Find the clinician to get their demographics
       const clinician = clinicians.find((c) => c.id === ranking.clinician_id)
       const experienceLevel = normalizeExperienceValue(clinician?.experience || "unknown")
+      const sex = clinician?.sex || "unknown"
+      const ageCategory = categorizeAge(clinician?.age)
 
       ranking.model_rankings.forEach((model: string, index: number) => {
         if (modelStats[model]) {
@@ -192,11 +224,23 @@ export default function AdminPage() {
           modelStats[model].totalRank += index + 1
           modelStats[model].count += 1
 
-          // Add to experience-specific stats if we know the experience
+          // Add to experience-specific stats
           if (experienceLevel === "less_than_5" || experienceLevel === "5_or_more") {
             const expKey = experienceLevel === "5_or_more" ? "five_or_more" : "less_than_5"
             modelStatsByExperience[expKey][model].totalRank += index + 1
             modelStatsByExperience[expKey][model].count += 1
+          }
+
+          // Add to sex-specific stats
+          if (sex === "Male" || sex === "Female") {
+            modelStatsBySex[sex][model].totalRank += index + 1
+            modelStatsBySex[sex][model].count += 1
+          }
+
+          // Add to age-specific stats
+          if (ageCategory !== "unknown") {
+            modelStatsByAge[ageCategory][model].totalRank += index + 1
+            modelStatsByAge[ageCategory][model].count += 1
           }
         }
       })
@@ -231,6 +275,63 @@ export default function AdminPage() {
       })),
     }
 
+    // Calculate average rank by sex
+    const averageRanksBySex = {
+      Male: models.map((model) => ({
+        model,
+        averageRank:
+          modelStatsBySex.Male[model].count > 0
+            ? (modelStatsBySex.Male[model].totalRank / modelStatsBySex.Male[model].count).toFixed(2)
+            : "N/A",
+      })),
+      Female: models.map((model) => ({
+        model,
+        averageRank:
+          modelStatsBySex.Female[model].count > 0
+            ? (modelStatsBySex.Female[model].totalRank / modelStatsBySex.Female[model].count).toFixed(2)
+            : "N/A",
+      })),
+    }
+
+    // Calculate average rank by age
+    const averageRanksByAge = {
+      under_35: models.map((model) => ({
+        model,
+        averageRank:
+          modelStatsByAge.under_35[model].count > 0
+            ? (modelStatsByAge.under_35[model].totalRank / modelStatsByAge.under_35[model].count).toFixed(2)
+            : "N/A",
+      })),
+      "35_to_40": models.map((model) => ({
+        model,
+        averageRank:
+          modelStatsByAge["35_to_40"][model].count > 0
+            ? (modelStatsByAge["35_to_40"][model].totalRank / modelStatsByAge["35_to_40"][model].count).toFixed(2)
+            : "N/A",
+      })),
+      "40_to_45": models.map((model) => ({
+        model,
+        averageRank:
+          modelStatsByAge["40_to_45"][model].count > 0
+            ? (modelStatsByAge["40_to_45"][model].totalRank / modelStatsByAge["40_to_45"][model].count).toFixed(2)
+            : "N/A",
+      })),
+      "45_to_50": models.map((model) => ({
+        model,
+        averageRank:
+          modelStatsByAge["45_to_50"][model].count > 0
+            ? (modelStatsByAge["45_to_50"][model].totalRank / modelStatsByAge["45_to_50"][model].count).toFixed(2)
+            : "N/A",
+      })),
+      "50_plus": models.map((model) => ({
+        model,
+        averageRank:
+          modelStatsByAge["50_plus"][model].count > 0
+            ? (modelStatsByAge["50_plus"][model].totalRank / modelStatsByAge["50_plus"][model].count).toFixed(2)
+            : "N/A",
+      })),
+    }
+
     // Sort by average rank (lower is better)
     return {
       overall: averageRanks.sort((a, b) =>
@@ -249,6 +350,59 @@ export default function AdminPage() {
               : Number.parseFloat(a.averageRank) - Number.parseFloat(b.averageRank),
         ),
         five_or_more: averageRanksByExperience.five_or_more.sort((a, b) =>
+          a.averageRank === "N/A"
+            ? 1
+            : b.averageRank === "N/A"
+              ? -1
+              : Number.parseFloat(a.averageRank) - Number.parseFloat(b.averageRank),
+        ),
+      },
+      bySex: {
+        Male: averageRanksBySex.Male.sort((a, b) =>
+          a.averageRank === "N/A"
+            ? 1
+            : b.averageRank === "N/A"
+              ? -1
+              : Number.parseFloat(a.averageRank) - Number.parseFloat(b.averageRank),
+        ),
+        Female: averageRanksBySex.Female.sort((a, b) =>
+          a.averageRank === "N/A"
+            ? 1
+            : b.averageRank === "N/A"
+              ? -1
+              : Number.parseFloat(a.averageRank) - Number.parseFloat(b.averageRank),
+        ),
+      },
+      byAge: {
+        under_35: averageRanksByAge.under_35.sort((a, b) =>
+          a.averageRank === "N/A"
+            ? 1
+            : b.averageRank === "N/A"
+              ? -1
+              : Number.parseFloat(a.averageRank) - Number.parseFloat(b.averageRank),
+        ),
+        "35_to_40": averageRanksByAge["35_to_40"].sort((a, b) =>
+          a.averageRank === "N/A"
+            ? 1
+            : b.averageRank === "N/A"
+              ? -1
+              : Number.parseFloat(a.averageRank) - Number.parseFloat(b.averageRank),
+        ),
+        "40_to_45": averageRanksByAge["40_to_45"].sort((a, b) =>
+          a.averageRank === "N/A"
+            ? 1
+            : b.averageRank === "N/A"
+              ? -1
+              : Number.parseFloat(a.averageRank) - Number.parseFloat(b.averageRank),
+        ),
+        "45_to_50": averageRanksByAge["45_to_50"].sort((a, b) =>
+          a.averageRank === "N/A"
+            ? 1
+            : b.averageRank === "N/A"
+              ? -1
+              : Number.parseFloat(a.averageRank) - Number.parseFloat(b.averageRank),
+        ),
+        "50_plus": averageRanksByAge["50_plus"].sort((a, b) =>
           a.averageRank === "N/A"
             ? 1
             : b.averageRank === "N/A"
@@ -284,8 +438,48 @@ export default function AdminPage() {
     return experienceCount
   }
 
+  // Compute demographic statistics
+  const computeDemographicStats = () => {
+    if (!clinicians.length) return null
+
+    const sexCount = {
+      Male: 0,
+      Female: 0,
+      unknown: 0,
+    }
+
+    const ageCount = {
+      under_35: 0,
+      "35_to_40": 0,
+      "40_to_45": 0,
+      "45_to_50": 0,
+      "50_plus": 0,
+      unknown: 0,
+    }
+
+    clinicians.forEach((clinician) => {
+      // Count by sex
+      if (clinician.sex === "Male" || clinician.sex === "Female") {
+        sexCount[clinician.sex]++
+      } else {
+        sexCount.unknown++
+      }
+
+      // Count by age
+      const ageCategory = categorizeAge(clinician.age)
+      if (ageCategory !== "unknown") {
+        ageCount[ageCategory]++
+      } else {
+        ageCount.unknown++
+      }
+    })
+
+    return { sexCount, ageCount }
+  }
+
   const statistics = computeStatistics()
   const experienceStats = computeExperienceStats()
+  const demographicStats = computeDemographicStats()
 
   if (!isAuthorized) {
     return (
@@ -351,25 +545,104 @@ export default function AdminPage() {
                             ))}
                           </ul>
 
-                          <h4 className="font-semibold mt-4 mb-1">Clinicians with &lt;5 years experience</h4>
-                          <ul className="space-y-1">
-                            {statistics.byExperience.less_than_5.map((stat, index) => (
-                              <li key={`less_${index}`} className="flex justify-between">
-                                <span>{stat.model}:</span>
-                                <span className="font-medium">{stat.averageRank}</span>
-                              </li>
-                            ))}
-                          </ul>
+                          <h4 className="font-semibold mt-4 mb-1">By Experience</h4>
+                          <div className="ml-2">
+                            <h5 className="font-medium mt-2 mb-1">Clinicians with &lt;5 years experience</h5>
+                            <ul className="space-y-1">
+                              {statistics.byExperience.less_than_5.map((stat, index) => (
+                                <li key={`less_${index}`} className="flex justify-between">
+                                  <span>{stat.model}:</span>
+                                  <span className="font-medium">{stat.averageRank}</span>
+                                </li>
+                              ))}
+                            </ul>
 
-                          <h4 className="font-semibold mt-4 mb-1">Clinicians with 5+ years experience</h4>
-                          <ul className="space-y-1">
-                            {statistics.byExperience.five_or_more.map((stat, index) => (
-                              <li key={`more_${index}`} className="flex justify-between">
-                                <span>{stat.model}:</span>
-                                <span className="font-medium">{stat.averageRank}</span>
-                              </li>
-                            ))}
-                          </ul>
+                            <h5 className="font-medium mt-2 mb-1">Clinicians with 5+ years experience</h5>
+                            <ul className="space-y-1">
+                              {statistics.byExperience.five_or_more.map((stat, index) => (
+                                <li key={`more_${index}`} className="flex justify-between">
+                                  <span>{stat.model}:</span>
+                                  <span className="font-medium">{stat.averageRank}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <h4 className="font-semibold mt-4 mb-1">By Sex</h4>
+                          <div className="ml-2">
+                            <h5 className="font-medium mt-2 mb-1">Male</h5>
+                            <ul className="space-y-1">
+                              {statistics.bySex.Male.map((stat, index) => (
+                                <li key={`male_${index}`} className="flex justify-between">
+                                  <span>{stat.model}:</span>
+                                  <span className="font-medium">{stat.averageRank}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            <h5 className="font-medium mt-2 mb-1">Female</h5>
+                            <ul className="space-y-1">
+                              {statistics.bySex.Female.map((stat, index) => (
+                                <li key={`female_${index}`} className="flex justify-between">
+                                  <span>{stat.model}:</span>
+                                  <span className="font-medium">{stat.averageRank}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <h4 className="font-semibold mt-4 mb-1">By Age Group</h4>
+                          <div className="ml-2">
+                            <h5 className="font-medium mt-2 mb-1">Under 35</h5>
+                            <ul className="space-y-1">
+                              {statistics.byAge.under_35.map((stat, index) => (
+                                <li key={`under35_${index}`} className="flex justify-between">
+                                  <span>{stat.model}:</span>
+                                  <span className="font-medium">{stat.averageRank}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            <h5 className="font-medium mt-2 mb-1">35-40 years</h5>
+                            <ul className="space-y-1">
+                              {statistics.byAge["35_to_40"].map((stat, index) => (
+                                <li key={`35to40_${index}`} className="flex justify-between">
+                                  <span>{stat.model}:</span>
+                                  <span className="font-medium">{stat.averageRank}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            <h5 className="font-medium mt-2 mb-1">40-45 years</h5>
+                            <ul className="space-y-1">
+                              {statistics.byAge["40_to_45"].map((stat, index) => (
+                                <li key={`40to45_${index}`} className="flex justify-between">
+                                  <span>{stat.model}:</span>
+                                  <span className="font-medium">{stat.averageRank}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            <h5 className="font-medium mt-2 mb-1">45-50 years</h5>
+                            <ul className="space-y-1">
+                              {statistics.byAge["45_to_50"].map((stat, index) => (
+                                <li key={`45to50_${index}`} className="flex justify-between">
+                                  <span>{stat.model}:</span>
+                                  <span className="font-medium">{stat.averageRank}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            <h5 className="font-medium mt-2 mb-1">50+ years</h5>
+                            <ul className="space-y-1">
+                              {statistics.byAge["50_plus"].map((stat, index) => (
+                                <li key={`50plus_${index}`} className="flex justify-between">
+                                  <span>{stat.model}:</span>
+                                  <span className="font-medium">{stat.averageRank}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         </div>
                       ) : (
                         <p>No ranking data available yet.</p>
@@ -403,6 +676,38 @@ export default function AdminPage() {
                                 <span className="font-medium">{experienceStats.unknown}</span>
                               </li>
                             )}
+                          </>
+                        )}
+                        {demographicStats && (
+                          <>
+                            <li className="flex justify-between mt-2 pt-2 border-t">
+                              <span>Male:</span>
+                              <span className="font-medium">{demographicStats.sexCount.Male}</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>Female:</span>
+                              <span className="font-medium">{demographicStats.sexCount.Female}</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>Under 35:</span>
+                              <span className="font-medium">{demographicStats.ageCount.under_35}</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>35-40 years:</span>
+                              <span className="font-medium">{demographicStats.ageCount["35_to_40"]}</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>40-45 years:</span>
+                              <span className="font-medium">{demographicStats.ageCount["40_to_45"]}</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>45-50 years:</span>
+                              <span className="font-medium">{demographicStats.ageCount["45_to_50"]}</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>50+ years:</span>
+                              <span className="font-medium">{demographicStats.ageCount["50_plus"]}</span>
+                            </li>
                           </>
                         )}
                       </ul>
@@ -480,6 +785,8 @@ export default function AdminPage() {
                         <th className="text-left p-2">Name</th>
                         <th className="text-left p-2">Institution</th>
                         <th className="text-left p-2">Experience</th>
+                        <th className="text-left p-2">Sex</th>
+                        <th className="text-left p-2">Age</th>
                         <th className="text-left p-2">Joined</th>
                       </tr>
                     </thead>
@@ -492,6 +799,8 @@ export default function AdminPage() {
                           <td className="p-2">
                             {clinician.experience === "less_than_5" ? "Less than 5 years" : "5+ years"}
                           </td>
+                          <td className="p-2">{clinician.sex || "Not specified"}</td>
+                          <td className="p-2">{clinician.age || "Not specified"}</td>
                           <td className="p-2">{new Date(clinician.created_at).toLocaleString()}</td>
                         </tr>
                       ))}

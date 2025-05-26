@@ -429,9 +429,9 @@ export function ImageComparisonRanking({
         {/* Changed from amber to blue to match instructions */}
         <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-2">
           <p className="text-blue-800 font-medium text-sm">
-            Drag images to reorder from best (left) to worst (right). Click any image to view it in full resolution in
-            the Comparison Area above. If you are using a touchscreen, just click on the letters of the pair of images
-            you want to swap instead of drag-and-drop.
+            Drag and drop images to reorder them from best (left) to worst (right). Click any image to view it in full resolution in
+            the Comparison Area above. If you are using a touchscreen, just click on the letters of the two images
+            you want to swap instead of drag & drop.
           </p>
         </div>
 

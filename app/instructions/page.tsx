@@ -20,7 +20,7 @@ export default function InstructionsPage() {
             <CardTitle className="text-3xl font-bold">
               <span className="gradient-text">Quick Instructions</span>
             </CardTitle>
-            <CardDescription className="text-gray-500">2 main steps • Takes 10-15 minutes</CardDescription>
+            <CardDescription className="text-gray-500">2 main sections in each question • Takes 10-15 minutes</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Main Steps with Visual Previews - Vertical Layout */}
@@ -88,7 +88,7 @@ export default function InstructionsPage() {
                   <div>
                     <h4 className="font-semibold text-green-900 text-lg">2. Rank</h4>
                     <p className="text-sm text-green-700">
-                      Drag & drop to rank the 6 images from best (left) to worst (right)
+                      Drag & drop to rank the 6 enhanced images from best (left) to worst (right)
                     </p>
                   </div>
                 </div>

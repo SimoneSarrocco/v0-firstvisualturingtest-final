@@ -47,11 +47,21 @@ export const checkClinicianExists = async (clinicianId: string): Promise<boolean
 
 // Save clinician data to Supabase
 export const saveClinicianToSupabase = async (
-  clinicianData: any,
+  clinicianData: {
+    id: string
+    name: string
+    institution: string
+    experience: string
+    sex: string
+    age: number
+    created_at: string
+  },
   markAsSubmitted = false,
 ): Promise<{ success: boolean; error?: string; id?: string }> => {
   try {
     const supabase = createClient()
+
+    console.log("Attempting to save clinician data:", clinicianData)
 
     // Check if clinician already exists
     const { data: existingClinician, error: checkError } = await supabase
@@ -66,19 +76,23 @@ export const saveClinicianToSupabase = async (
       return { success: false, error: checkError.message }
     }
 
+    const now = new Date().toISOString()
+
     if (existingClinician) {
+      console.log("Updating existing clinician:", clinicianData.id)
+
       // Update existing clinician
-      const updateData: any = {
+      const updateData = {
         name: clinicianData.name,
         institution: clinicianData.institution,
         experience: clinicianData.experience,
-        updated_at: new Date().toISOString(),
+        sex: clinicianData.sex,
+        age: clinicianData.age,
+        updated_at: now,
+        ...(markAsSubmitted && { submitted_test: true }),
       }
 
-      // Only set submitted_test if markAsSubmitted is true
-      if (markAsSubmitted) {
-        updateData.submitted_test = true
-      }
+      console.log("Update data:", updateData)
 
       const { error: updateError } = await supabase.from("clinicians").update(updateData).eq("id", clinicianData.id)
 
@@ -87,29 +101,34 @@ export const saveClinicianToSupabase = async (
         return { success: false, error: updateError.message }
       }
 
+      console.log("Successfully updated clinician")
       return { success: true, id: clinicianData.id }
     } else {
+      console.log("Creating new clinician:", clinicianData.id)
+
       // Insert new clinician
-      const insertData: any = {
+      const insertData = {
         id: clinicianData.id,
         name: clinicianData.name,
         institution: clinicianData.institution,
         experience: clinicianData.experience,
-        created_at: clinicianData.created_at || new Date().toISOString(),
+        sex: clinicianData.sex,
+        age: clinicianData.age,
+        created_at: clinicianData.created_at,
+        updated_at: now,
+        ...(markAsSubmitted && { submitted_test: true }),
       }
 
-      // Only set submitted_test if markAsSubmitted is true
-      if (markAsSubmitted) {
-        insertData.submitted_test = true
-      }
+      console.log("Insert data:", insertData)
 
-      const { data, error: insertError } = await supabase.from("clinicians").insert([insertData])
+      const { data, error: insertError } = await supabase.from("clinicians").insert([insertData]).select()
 
       if (insertError) {
         console.error("Error inserting clinician:", insertError)
         return { success: false, error: insertError.message }
       }
 
+      console.log("Successfully created clinician:", data)
       return { success: true, id: clinicianData.id }
     }
   } catch (error) {
@@ -153,6 +172,8 @@ export const saveRankingsToSupabase = async (
           name: clinicianData.name || "Anonymous",
           institution: clinicianData.institution || "Not specified",
           experience: clinicianData.experience || "unknown",
+          sex: clinicianData.sex || "Not specified",
+          age: clinicianData.age || null,
           created_at: clinicianData.created_at || now,
         },
         true,

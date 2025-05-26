@@ -18,7 +18,7 @@ export default function TestSupabasePage() {
       const supabase = createClient()
 
       // Simple query to test the connection
-      const { data, error } = await supabase.from("rankings").select("count(*)").limit(1)
+      const { data, error } = await supabase.from("rankings").select("*", { count: "exact", head: true })
 
       if (error) throw error
 
