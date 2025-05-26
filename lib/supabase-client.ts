@@ -3,9 +3,9 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 let supabaseInstance: ReturnType<typeof createSupabaseClient> | null = null
 
 // Updated credentials
-const SUPABASE_URL = "https://zhkliryjczvvebihksbu.supabase.co"
+const SUPABASE_URL = "https://foicozgezyjrbebpvbid.supabase.co"
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpoa2xpcnlqY3p2dmViaWhrc2J1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMDgxNDEsImV4cCI6MjA2Mzc4NDE0MX0.HgsD3eSqEaJerblIfSA0Jt4QG3lvBNJT7kEFuUHBg4M"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvaWNvemdlenlqcmJlYnB2YmlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc0MTE4ODMsImV4cCI6MjA2Mjk4Nzg4M30.TuI3sRRaRFfjDy8WpBdvkvwK-T_UeFviIKxpmHuF0ZA"
 
 export const createClient = () => {
   // Don't create a client during SSR
