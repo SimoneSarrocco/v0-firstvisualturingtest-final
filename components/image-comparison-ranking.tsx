@@ -316,7 +316,7 @@ export function ImageComparisonRanking({
           <div className="p-3 pt-1 text-sm border-t border-blue-200">
             <ul className="text-blue-800 space-y-2 list-disc list-inside">
               <li>
-                Click or drag an AI-enhanced image (from the section below) into the comparison area to compare with the
+                Click or drag an AI-enhanced image (from the section below) into the comparison area to compare it with the
                 low-quality image.
               </li>
               <li>Rank the enhanced images from best (left) to worst (right) by dragging them into order</li>
