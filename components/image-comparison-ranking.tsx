@@ -303,20 +303,6 @@ export function ImageComparisonRanking({
 
   return (
       <div className="flex flex-col space-y-2 w-full">
-        {/* Collapsible Instructions - More compact and less intrusive */}
-        <div className="mb-2">
-          <details className="bg-blue-50 border border-blue-200 rounded-md overflow-hidden">
-            <summary className="p-1.5 text-sm font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors flex items-center">
-              <InfoIcon className="h-3 w-3 mr-1.5" /> Instructions (click to expand)
-              </summary>
-              <div className="px-2 py-1.5 text-xs border-t border-blue-200">
-                <ul className="text-blue-800 space-y-1 list-disc list-inside">
-                  Click or drag an AI-enhanced image (from the ranking section below) into the Comparison Area to compare it side-by-side with the low-quality image in full resolution. Rank the enhanced images from Best (left) to Worst (right) in the ranking section below by drag & drop them in the desired position.
-                </ul>
-              </div>
-        </details>
-      </div>
-
       {/* Main comparison area with dotted border and label - more compact */}
       <div className="relative border-2 border-dashed border-blue-300 rounded-lg p-2">
         {/* Comparison Area Label */}
@@ -479,6 +465,20 @@ export function ImageComparisonRanking({
           })}
         </div>
       </div>
+
+      {/* Collapsible Instructions - Moved to bottom */}
+      <div className="mt-4">
+        <details className="bg-blue-50 border border-blue-200 rounded-md overflow-hidden">
+          <summary className="p-1.5 text-sm font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors flex items-center">
+            <InfoIcon className="h-3 w-3 mr-1.5" /> Instructions (click to expand)
+            </summary>
+            <div className="px-2 py-1.5 text-xs border-t border-blue-200">
+              <ul className="text-blue-800 space-y-1 list-disc list-inside">
+                Click or drag an AI-enhanced image (from the ranking section below) into the Comparison Area to compare it side-by-side with the low-quality image in full resolution. Rank the enhanced images from Best (left) to Worst (right) in the ranking section below by drag & drop them in the desired position.
+              </ul>
+            </div>
+      </details>
+    </div>
 
       {/* Full-size image viewer */}
       {fullSizeImage && (
