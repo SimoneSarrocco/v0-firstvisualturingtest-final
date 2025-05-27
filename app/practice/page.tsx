@@ -54,15 +54,15 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="w-full px-4 py-3">
-      <Card className="modern-card mb-2 w-full max-w-none">
-        <CardHeader className="pb-0 px-4 modern-header">
-          <CardTitle className="text-xl font-bold">
+    <div className="w-full px-4 py-1">
+      <Card className="modern-card mb-1 w-full max-w-none">
+        <CardHeader className="pb-0 px-4 py-2 modern-header">
+          <CardTitle className="text-lg font-bold">
             <span className="gradient-text">Practice Question</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-2 px-4">
-          <div className="space-y-2">
+        <CardContent className="pt-1 px-4 pb-2">
+          <div className="space-y-1">
             <ImageComparisonRanking
               inputImage={practiceImage}
               models={models}
@@ -72,6 +72,8 @@ export default function PracticePage() {
           </div>
         </CardContent>
       </Card>
+
+      
 
       {/* Completion Dialog */}
       <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
@@ -101,3 +103,4 @@ export default function PracticePage() {
     </div>
   )
 }
+
