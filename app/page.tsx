@@ -76,7 +76,13 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
-
+        {/* PC screen warning box */}
+        <div className="mb-6 px-4 py-3 border-l-4 border-blue-500 bg-blue-50 text-blue800 rounded-md shadow-sm">
+          <p className="font-medium"><strong>Important Notice</strong>:</p>
+          <p className="text-sm mt-1">
+            Please take this test using a <strong>desktop</strong> or <strong>laptop computer</strong>. Mobile or tablet screens may not properly display the OCT images, which could result in inaccurate evaluations.
+          </p>
+        </div>
         <div className="flex justify-center">
           <Suspense
             fallback={
