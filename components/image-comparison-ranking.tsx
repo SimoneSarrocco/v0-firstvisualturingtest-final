@@ -313,14 +313,9 @@ export function ImageComparisonRanking({
           <summary className="p-2 font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors flex items-center">
             <InfoIcon className="h-4 w-4 mr-2" /> Instructions (click to expand)
           </summary>
-          <div className="p-3 pt-1 text-sm border-t border-blue-200">
+          <div className="p-3 pt-1 text-xs border-t border-blue-200">
             <ul className="text-blue-800 space-y-2 list-disc list-inside">
-              <li>
-                Click or drag an AI-enhanced image (from the section below) into the comparison area to compare with the
-                low-quality image.
-              </li>
-              <li>Rank the enhanced images from best (left) to worst (right) by dragging them into order</li>
-              <li>Click "Submit Ranking" when you're satisfied with your ordering</li>
+              Click or drag an AI-enhanced image (from the ranking section below) into the Comparison Area to compare it side-by-side with the low-quality image in full resolution. Rank the enhanced images from Best (left) to Worst (right) in the ranking section below by drag & drop them in the desired position.
             </ul>
           </div>
         </details>
@@ -371,7 +366,7 @@ export function ImageComparisonRanking({
               </h3>
               {selectedModel && (
                 <div className="flex items-center gap-2">
-                  <span className="bg-white px-2 py-1 text-sm font-bold rounded border border-gray-300">
+                  <span className="bg-white px-2 py-1 text-xs font-bold rounded border border-gray-300">
                     {modelLetters[selectedModel]}
                   </span>
                   <Button
@@ -418,20 +413,11 @@ export function ImageComparisonRanking({
       {/* Model ranking area - more compact with less vertical space */}
       <div className="space-y-1 mt-2 w-full">
         <div className="flex justify-between items-center">
-          <h3 className="font-medium text-base">Rank AI-generated Enhanced Images:</h3>
+          <h3 className="font-medium text-sm">Rank AI-generated Enhanced Images from Best (left) to Worst (right) by drag & drop:</h3>
           {/* Submit button moved to the right side to save vertical space */}
           <Button onClick={handleSubmit} size="sm">
             Submit Ranking
           </Button>
-        </div>
-
-        {/* Changed from amber to blue to match instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-2">
-          <p className="text-blue-800 font-medium text-sm">
-            Drag and drop images to reorder them from best (left) to worst (right). Click any image to view it in full
-            resolution in the Comparison Area above. If you are using a touchscreen, just click on the letters of the
-            two images you want to swap instead of drag & drop.
-          </p>
         </div>
 
         <div className="flex flex-wrap gap-2 justify-center">
@@ -453,11 +439,11 @@ export function ImageComparisonRanking({
               >
                 <div className="p-1 text-center font-semibold rounded-t-md text-base bg-gray-50 text-gray-700">
                   {index === 0
-                    ? "Best"
+                    ? "🥇Best"
                     : index === 1
-                      ? "2nd Best"
+                      ? "🥈2nd Best"
                       : index === 2
-                        ? "3rd Best"
+                        ? "🥉3rd Best"
                         : index === 3
                           ? "4th Best"
                           : index === 4
@@ -465,7 +451,7 @@ export function ImageComparisonRanking({
                             : "Worst"}
                 </div>
                 <div className="text-center mb-1">
-                  <span className="bg-white px-2 py-1 text-sm font-bold rounded border border-gray-300">{letter}</span>
+                  <span className="bg-white px-2 py-1 text-xs font-bold rounded border border-gray-300">{letter}</span>
                 </div>
                 <div
                   className={cn(
