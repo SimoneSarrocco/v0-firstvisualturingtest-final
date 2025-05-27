@@ -395,7 +395,18 @@ export function ImageComparisonRanking({
       {/* Model ranking area - more compact with less vertical space */}
       <div className="space-y-1 mt-2 w-full">
         <div className="flex justify-between items-center">
-          <h3 className="font-medium text-sm">Rank AI-generated Enhanced Images from Best (left) to Worst (right) by drag & drop:</h3>
+          <div className="flex-1">
+            <details className="bg-blue-50 border border-blue-200 rounded-md overflow-hidden">
+              <summary className="p-1.5 text-sm font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors flex items-center">
+                <InfoIcon className="h-3 w-3 mr-1.5" /> Instructions (click to expand)
+                </summary>
+                <div className="px-2 py-1.5 text-xs border-t border-blue-200">
+                  <ul className="text-blue-800 space-y-1 list-disc list-inside">
+                    Click or drag an AI-enhanced image (from the ranking section below) into the Comparison Area to compare it side-by-side with the low-quality image in full resolution. Rank the enhanced images from Best (left) to Worst (right) in the ranking section below by drag & drop them in the desired position.
+                  </ul>
+                </div>
+          </details>
+        </div>
           {/* Submit button moved to the right side to save vertical space */}
           <Button onClick={handleSubmit} size="sm">
             Submit Ranking
@@ -466,19 +477,7 @@ export function ImageComparisonRanking({
         </div>
       </div>
 
-      {/* Collapsible Instructions - Moved to bottom */}
-      <div className="mt-4">
-        <details className="bg-blue-50 border border-blue-200 rounded-md overflow-hidden">
-          <summary className="p-1.5 text-sm font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors flex items-center">
-            <InfoIcon className="h-3 w-3 mr-1.5" /> Instructions (click to expand)
-            </summary>
-            <div className="px-2 py-1.5 text-xs border-t border-blue-200">
-              <ul className="text-blue-800 space-y-1 list-disc list-inside">
-                Click or drag an AI-enhanced image (from the ranking section below) into the Comparison Area to compare it side-by-side with the low-quality image in full resolution. Rank the enhanced images from Best (left) to Worst (right) in the ranking section below by drag & drop them in the desired position.
-              </ul>
-            </div>
-      </details>
-    </div>
+
 
       {/* Full-size image viewer */}
       {fullSizeImage && (
