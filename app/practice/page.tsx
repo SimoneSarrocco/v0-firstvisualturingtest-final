@@ -72,7 +72,6 @@ export default function PracticePage() {
           </div>
         </CardContent>
       </Card>
-    </div>
 
       {/* Completion Dialog */}
       <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
@@ -99,5 +98,7 @@ export default function PracticePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
   )
 }
+
