@@ -492,5 +492,3 @@ export function ImageComparisonRanking({
     </div>
   )
 }
-
-
