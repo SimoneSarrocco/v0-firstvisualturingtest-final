@@ -316,7 +316,7 @@ export function ImageComparisonRanking({
           <div className="p-3 pt-1 text-sm border-t border-blue-200">
             <ul className="text-blue-800 space-y-2 list-disc list-inside">
               <li>
-                Click or drag an AI-enhanced image (from the section below) into the comparison area to compare it with the
+                Click or drag an AI-enhanced image (from the section below) into the comparison area to compare with the
                 low-quality image.
               </li>
               <li>Rank the enhanced images from best (left) to worst (right) by dragging them into order</li>
@@ -335,7 +335,7 @@ export function ImageComparisonRanking({
           {/* Original image on the left */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium text-sm">Low-quality OCT Image (ART10):</h3>
+              <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
               <Button
                 variant="ghost"
                 size="icon"
@@ -387,12 +387,12 @@ export function ImageComparisonRanking({
             </div>
             {selectedModel ? (
               <div
-                className="relative rounded-md cursor-pointer bg-black p-1"
+                className="relative rounded-md cursor-pointer bg-black"
                 onClick={() => handleViewFullImage(selectedModel)}
-                style={{ width: "776px", height: "504px" }}
+                style={{ width: "768px", height: "496px" }}
               >
-                {/* Purple highlight border - positioned at the edge of the padding */}
-                <div className="absolute inset-0 border-4 border-purple-500 rounded-md pointer-events-none z-10"></div>
+                {/* Purple highlight border - positioned outside with margin */}
+                <div className="absolute -inset-2 border-4 border-purple-500 rounded-lg pointer-events-none z-10"></div>
 
                 {/* Using a regular img tag with fixed dimensions to ensure exact size */}
                 <img
@@ -429,9 +429,9 @@ export function ImageComparisonRanking({
         {/* Changed from amber to blue to match instructions */}
         <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-2">
           <p className="text-blue-800 font-medium text-sm">
-            Drag and drop images to reorder them from best (left) to worst (right). Click any image to view it in full resolution in
-            the Comparison Area above. If you are using a touchscreen, just click on the letters of the two images
-            you want to swap instead of drag & drop.
+            Drag and drop images to reorder them from best (left) to worst (right). Click any image to view it in full
+            resolution in the Comparison Area above. If you are using a touchscreen, just click on the letters of the
+            two images you want to swap instead of drag & drop.
           </p>
         </div>
 
@@ -470,17 +470,17 @@ export function ImageComparisonRanking({
                 </div>
                 <div
                   className={cn(
-                    "relative border-2 rounded-md cursor-pointer transition-all p-1",
+                    "relative border-2 rounded-md cursor-pointer transition-all",
                     "border-gray-300", // Simple gray border instead of colored ones
                     isDragging ? "opacity-50" : "opacity-100",
                     isDragOver ? "border-blue-500 border-dashed" : "",
                   )}
                   onClick={() => handleModelClick(model)}
                 >
-                  <div className="aspect-[1.55] relative">
-                    {/* Purple highlight border for selected image - positioned at the edge of the padding */}
+                  <div className="aspect-[1.55] relative p-2">
+                    {/* Purple highlight border for selected image - positioned outside the padding */}
                     {isSelected && (
-                      <div className="absolute inset-0 border-4 border-purple-500 rounded-md pointer-events-none z-10"></div>
+                      <div className="absolute -inset-1 border-4 border-purple-500 rounded-lg pointer-events-none z-10"></div>
                     )}
 
                     {/* Make only the image draggable, not the container */}

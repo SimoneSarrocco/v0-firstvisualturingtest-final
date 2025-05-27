@@ -299,7 +299,7 @@ export function MobileImageComparisonRanking({
           {/* Original image on the top */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium text-sm">Low-quality OCT Image (ART10):</h3>
+              <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
               <Button
                 variant="ghost"
                 size="icon"
@@ -353,14 +353,14 @@ export function MobileImageComparisonRanking({
                 onClick={() => handleViewFullImage(selectedModel)}
                 style={{ aspectRatio: "1.55/1" }}
               >
-                {/* Purple highlight border - made more visible */}
-                <div className="absolute inset-0 border-4 border-purple-500 rounded-md pointer-events-none z-10"></div>
+                {/* Purple highlight border - positioned outside with margin */}
+                <div className="absolute -inset-2 border-4 border-purple-500 rounded-lg pointer-events-none z-10"></div>
 
                 {/* Using a regular img tag for mobile */}
                 <img
                   src={getImageSrc(selectedModel) || "/placeholder.svg"}
                   alt={`Enhanced Image ${modelLetters[selectedModel]}`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain p-2"
                 />
               </div>
             ) : (
@@ -438,12 +438,12 @@ export function MobileImageComparisonRanking({
                       style={{ height: "140px" }}
                       onClick={() => handleModelClick(model)}
                     >
-                      {/* Purple highlight border for selected image - made more visible */}
+                      {/* Purple highlight border for selected image - positioned outside */}
                       {isModelSelected && (
-                        <div className="absolute inset-0 border-4 border-purple-500 rounded-md pointer-events-none z-10"></div>
+                        <div className="absolute -inset-1 border-4 border-purple-500 rounded-lg pointer-events-none z-10"></div>
                       )}
 
-                      <div className="w-full h-full flex items-center justify-center p-2">
+                      <div className="w-full h-full flex items-center justify-center p-3">
                         <img
                           src={getImageSrc(model) || "/placeholder.svg"}
                           alt={`Enhanced Image ${letter}`}
