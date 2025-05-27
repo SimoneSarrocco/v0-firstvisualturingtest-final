@@ -74,8 +74,6 @@ export default function PracticePage() {
       </Card>
     </div>
 
-      
-
       {/* Completion Dialog */}
       <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
         <DialogContent className="modern-dialog p-6">
@@ -101,7 +99,5 @@ export default function PracticePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
   )
 }
-
