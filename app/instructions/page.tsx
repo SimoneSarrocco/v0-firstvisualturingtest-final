@@ -137,27 +137,30 @@ export default function InstructionsPage() {
               </div>
             </div>
 
+
             {/* Additional Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-800">Additional Notes:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg">
-                  <Smartphone className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h5 className="font-medium text-purple-900">Mobile/Touch Devices</h5>
-                    <p className="text-sm text-purple-700">Tap letters to swap images instead of drag & drop</p>
-                  </div>
+                <div className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg">
+                  <Monitor className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                 <div>
+                  <h5 className="font-medium text-red-900">Use a PC Screen</h5>
+                  <p className="text-sm text-red-700">
+                  Please use a desktop or laptop screen to take the test. Mobile or tablet screens may not display OCT images properly, leading to inaccurate evaluations.
+                  </p>
                 </div>
+              </div>
 
-                <div className="flex items-start space-x-3 p-3 bg-amber-50 rounded-lg">
-                  <Send className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h5 className="font-medium text-amber-900">Submission</h5>
-                    <p className="text-sm text-amber-700">Save each ranking, complete all 10 questions</p>
-                  </div>
+              <div className="flex items-start space-x-3 p-3 bg-amber-50 rounded-lg">
+                <Send className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h5 className="font-medium text-amber-900">Submission</h5>
+                  <p className="text-sm text-amber-700">Save each ranking, complete all 10 questions</p>
                 </div>
               </div>
             </div>
+      </div>
 
             {/* What to Look For - Vertical Layout */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-4 rounded-lg">
