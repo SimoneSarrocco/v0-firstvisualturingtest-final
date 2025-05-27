@@ -326,16 +326,16 @@ export function ImageComparisonRanking({
         </details>
       </div>
 
-      {/* Main comparison area with dotted border and label - more compact */}
-      <div className="relative border-2 border-dashed border-blue-300 rounded-lg p-3 pb-4">
+{/* Main comparison area with dotted border and label - more compact */}
+      <div className="relative border-2 border-dashed border-blue-300 rounded-lg p-2">
         {/* Comparison Area Label */}
-        <div className="absolute -top-3 left-4 bg-white px-2 text-blue-600 font-medium">Comparison Area</div>
+        <div className="absolute -top-3 left-4 bg-white px-2 text-blue-600 text-sm font-medium">Comparison Area</div>
 
-        <div className="flex flex-col xl:flex-row justify-center items-center xl:items-start gap-3">
+        <div className="flex flex-col xl:flex-row justify-center items-center xl:items-start gap-2">
           {/* Original image on the left */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium text-sm">Low-quality OCT Image:</h3>
+              <h3 className="text-sm font-medium text-sm">Low-quality OCT Image (ART10):</h3>
               <Button
                 variant="ghost"
                 size="icon"
@@ -346,14 +346,14 @@ export function ImageComparisonRanking({
               </Button>
             </div>
             <div
-              className="relative border border-gray-300 rounded-md overflow-hidden cursor-pointer bg-black"
+              className="relative border border-gray-300 cursor-pointer bg-black"
               onClick={() => handleViewFullImage(null)}
               style={{ width: "768px", height: "496px" }}
             >
               {/* Using a regular img tag with fixed dimensions to ensure exact size */}
               <img
                 src={getImageSrc(null) || "/placeholder.svg"}
-                alt="Low-quality OCT image"
+                alt="Low-quality OCT image (ART10)"
                 width="768"
                 height="496"
                 style={{ width: "768px", height: "496px", objectFit: "none" }}
@@ -364,7 +364,7 @@ export function ImageComparisonRanking({
           {/* Selected model image on the right */}
           <div className="space-y-1" onDragOver={(e) => e.preventDefault()} onDrop={handleDropToComparison}>
             <div className="flex items-center justify-between">
-              <h3 className="font-medium text-sm">
+              <h3 className="text-sm font-medium text-sm">
                 {selectedModel
                   ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
                   : "Drag an image here to compare:"}
@@ -387,12 +387,12 @@ export function ImageComparisonRanking({
             </div>
             {selectedModel ? (
               <div
-                className="relative rounded-md cursor-pointer bg-black"
+                className="relative border border-gray-300 cursor-pointer bg-black"
                 onClick={() => handleViewFullImage(selectedModel)}
                 style={{ width: "768px", height: "496px" }}
               >
                 {/* Purple highlight border - positioned outside with margin */}
-                <div className="absolute -inset-2 border-4 border-purple-500 rounded-lg pointer-events-none z-10"></div>
+                <div className="absolute -inset-2 border-4 border-purple-500 pointer-events-none z-10"></div>
 
                 {/* Using a regular img tag with fixed dimensions to ensure exact size */}
                 <img
@@ -400,13 +400,12 @@ export function ImageComparisonRanking({
                   alt={`Enhanced Image ${modelLetters[selectedModel]}`}
                   width="768"
                   height="496"
-                  className="rounded-sm"
                   style={{ width: "768px", height: "496px", objectFit: "none" }}
                 />
               </div>
             ) : (
               <div
-                className="flex items-center justify-center border border-dashed border-gray-300 rounded-md bg-gray-50"
+                className="flex items-center justify-center border border-dashed border-gray-300 bg-gray-50"
                 style={{ width: "768px", height: "496px" }}
               >
                 <p className="text-gray-500">Drag an image here to compare</p>
@@ -470,7 +469,7 @@ export function ImageComparisonRanking({
                 </div>
                 <div
                   className={cn(
-                    "relative border-2 rounded-md cursor-pointer transition-all",
+                    "relative border-2 cursor-pointer transition-all",
                     "border-gray-300", // Simple gray border instead of colored ones
                     isDragging ? "opacity-50" : "opacity-100",
                     isDragOver ? "border-blue-500 border-dashed" : "",
@@ -480,14 +479,14 @@ export function ImageComparisonRanking({
                   <div className="aspect-[1.55] relative p-2">
                     {/* Purple highlight border for selected image - positioned outside the padding */}
                     {isSelected && (
-                      <div className="absolute -inset-1 border-4 border-purple-500 rounded-lg pointer-events-none z-10"></div>
+                      <div className="absolute -inset-1 border-4 border-purple-500 pointer-events-none z-10"></div>
                     )}
 
                     {/* Make only the image draggable, not the container */}
                     <img
                       src={getImageSrc(model) || "/placeholder.svg"}
                       alt={`Enhanced Image ${letter}`}
-                      className="w-full h-full object-cover rounded-sm"
+                      className="w-full h-full object-cover"
                       draggable
                       onDragStart={(e) => handleDragStart(e, model)}
                       onDragEnd={() => {
