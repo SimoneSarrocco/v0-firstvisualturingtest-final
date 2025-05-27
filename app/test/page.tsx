@@ -727,9 +727,9 @@ export default function TestPage() {
   }
 
   return (
-    <div className="w-full px-0 py-1 mx-auto">
+    <div className="w-full px-0 py-0.5 mx-auto">
       <Card className="w-full">
-        <CardHeader className="pb-0 pt-2 px-4 modern-header">
+        <CardHeader className="pb-0 pt-1 px-2 modern-header">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center justify-between text-lg">
               <span className="gradient-text">
@@ -749,7 +749,7 @@ export default function TestPage() {
                     index === currentImageIndex ? "question-button-active" : "question-button",
                     modifiedQuestions.has(index) ? "question-button-modified" : "",
                     completedQuestions.has(index) ? "question-button-completed" : "",
-                    "h-7 min-w-7 px-1.5", // Smaller buttons
+                    "h-7 min-w-7 px-1", // Smaller buttons
                   )}
                   onClick={() => navigateToQuestion(index)}
                 >
