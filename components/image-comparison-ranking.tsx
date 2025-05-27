@@ -1,9 +1,11 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ZoomIn, InfoIcon } from "lucide-react"
+import { ZoomIn, InfoIcon} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ImageViewer } from "./image-viewer"
 import { useDeviceType } from "@/hooks/use-device-type"
@@ -224,15 +226,9 @@ export function ImageComparisonRanking({
     }
   }
 
-  // Handle drag start - only for the image itself
-  const handleDragStart = (e: React.DragEvent, model: string) => {
-    // Only allow dragging the image itself, not the container
-    if ((e.target as HTMLElement).tagName === "IMG") {
-      setDraggedModel(model)
-    } else {
-      // Prevent dragging if not the image
-      e.preventDefault()
-    }
+  // Handle drag start
+  const handleDragStart = (model: string) => {
+    setDraggedModel(model)
   }
 
   // Handle drag over
@@ -321,7 +317,7 @@ export function ImageComparisonRanking({
         </details>
       </div>
 
-{/* Main comparison area with dotted border and label - more compact */}
+      {/* Main comparison area with dotted border and label - more compact */}
       <div className="relative border-2 border-dashed border-blue-300 rounded-lg p-2">
         {/* Comparison Area Label */}
         <div className="absolute -top-3 left-4 bg-white px-2 text-blue-600 text-sm font-medium">Comparison Area</div>
@@ -420,6 +416,8 @@ export function ImageComparisonRanking({
           </Button>
         </div>
 
+
+
         <div className="flex flex-wrap gap-2 justify-center">
           {modelRanking.map((model, index) => {
             const borderColorClass = getBorderColorClass(index)
@@ -428,14 +426,19 @@ export function ImageComparisonRanking({
             const isDragging = draggedModel === model
             const isDragOver = dragOverIndex === index
             const letter = modelLetters[model] || "?"
-            const isSelected = selectedModel === model
 
             return (
               <div
                 key={model}
                 className="flex flex-col w-[calc(16.666%-8px)]" // Changed from 20% to 16.666% for 6 columns
+                draggable
+                onDragStart={() => handleDragStart(model)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={() => {
+                  setDraggedModel(null)
+                  setDragOverIndex(null)
+                }}
               >
                 <div className="p-1 text-center font-semibold rounded-t-md text-base bg-gray-50 text-gray-700">
                   {index === 0
@@ -450,37 +453,26 @@ export function ImageComparisonRanking({
                             ? "5th Best"
                             : "Worst"}
                 </div>
-                <div className="text-center mb-1">
-                  <span className="bg-white px-2 py-1 text-xs font-bold rounded border border-gray-300">{letter}</span>
-                </div>
                 <div
                   className={cn(
-                    "relative border-2 cursor-pointer transition-all",
+                    "relative border-2 rounded-b-md overflow-hidden cursor-pointer transition-all",
                     "border-gray-300", // Simple gray border instead of colored ones
                     isDragging ? "opacity-50" : "opacity-100",
                     isDragOver ? "border-blue-500 border-dashed" : "",
+                    selectedModel === model ? "ring-4 ring-purple-500 ring-offset-2 border-purple-500" : "", // More prominent purple selection
                   )}
                   onClick={() => handleModelClick(model)}
                 >
-                  <div className="aspect-[1.55] relative p-2">
-                    {/* Purple highlight border for selected image - positioned outside the padding */}
-                    {isSelected && (
-                      <div className="absolute -inset-1 border-4 border-purple-500 pointer-events-none z-10"></div>
-                    )}
-
-                    {/* Make only the image draggable, not the container */}
-                    <img
+                  <div className="aspect-[1.55] relative">
+                    <Image
                       src={getImageSrc(model) || "/placeholder.svg"}
                       alt={`Enhanced Image ${letter}`}
-                      className="w-full h-full object-cover"
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, model)}
-                      onDragEnd={() => {
-                        setDraggedModel(null)
-                        setDragOverIndex(null)
-                      }}
+                      fill
+                      className="object-cover"
+                      unoptimized
                     />
                   </div>
+                  <div className="absolute top-1 left-1 bg-white/80 px-2 py-1 text-sm font-bold rounded">{letter}</div>
                 </div>
               </div>
             )
