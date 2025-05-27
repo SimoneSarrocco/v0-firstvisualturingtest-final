@@ -304,9 +304,9 @@ export function ImageComparisonRanking({
   return (
       <div className="flex flex-col space-y-2 w-full">
       {/* Main comparison area with dotted border and label - more compact */}
-      <div className="relative border-2 border-dashed border-blue-300 rounded-lg p-2">
+<parameter name="div className="relative border-2 border-dashed border-blue-300 rounded-lg p-2">
         {/* Comparison Area Label */}
-        <div className="absolute -top-3 left-4 bg-white px-2 text-blue-600 text-sm font-medium">Comparison Area</div>
+        <div className="absolute -top-2.5 left-4 bg-white px-1.5 text-blue-600 text-xs font-medium">Comparison Area</div>
 
         <div className="flex flex-col xl:flex-row justify-center items-center xl:items-start gap-2">
           {/* Original image on the left */}

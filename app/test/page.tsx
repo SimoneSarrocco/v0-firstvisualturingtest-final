@@ -1,69 +1,78 @@
 "use client"
 
-import { cn } from "@/lib/utils"
-import { useState, useEffect, useCallback, useRef } from "react"
-import { useRouter } from "next/navigation"
+import type React from "react"
+
+import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { toast } from "@/components/ui/use-toast"
-import { Toaster } from "@/components/ui/toaster"
-import { ImageComparisonRanking } from "@/components/image-comparison-ranking"
-import { Download, AlertCircle, Mail, Lock, CheckCircle, RefreshCw, Pencil } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { formatRankingsForExport, createCSV, downloadCSV } from "@/lib/export-utils"
-import {
-  saveToStorage,
-  getFromStorage,
-  removeFromStorage,
-  getOrCreateDeviceId,
-  hasSubmittedInSession,
-  markSubmittedInSession,
-  CLINICIAN_ID_KEY,
-} from "@/lib/storage-utils"
-import { testSupabaseConnection, saveRankingsToSupabase, hasSupabaseEnvVars } from "@/lib/supabase-utils"
+import { ZoomIn, InfoIcon} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { ImageViewer } from "./image-viewer"
+import { useDeviceType } from "@/hooks/use-device-type"
+import { MobileImageComparisonRanking } from "./mobile-image-comparison-ranking"
 
-// Define model types - but don't show their names to users
-const models = ["DDPM_7th_new", "VQGAN", "UNET", "Pix2Pix", "BBDM", "TARGET"]
-
-// Generate test sequence - consistently select 10 random sets out of 17
-const generateTestSequence = () => {
-  // Use a fixed seed for random selection to ensure consistency
-  const fixedSeed = 42
-  const pseudoRandom = (seed) => {
-    let value = seed
-    return () => {
-      value = (value * 9301 + 49297) % 233280
-      return value / 233280
-    }
+// Helper function to get border color class based on rank position
+const getBorderColorClass = (position: number): string => {
+  switch (position) {
+    case 0: // Rank 1 (Best)
+      return "border-blue-500"
+    case 1: // Rank 2
+      return "border-cyan-500"
+    case 2: // Rank 3 (Neutral)
+      return "border-gray-400"
+    case 3: // Rank 4
+      return "border-amber-500"
+    case 4: // Rank 5 (Worst)
+      return "border-red-500"
+    case 5: // Rank 6 (Worst)
+      return "border-red-600"
+    default:
+      return "border-gray-200"
   }
+}
 
-  const random = pseudoRandom(fixedSeed)
-
-  // Create an array of all possible group indices (0 to 16)
-  const allGroups = Array.from({ length: 17 }, (_, i) => i)
-
-  // Shuffle the array using our seeded random function
-  for (let i = allGroups.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1))
-    ;[allGroups[i], allGroups[j]] = [allGroups[j], allGroups[i]]
+// Helper function to get text color based on rank position
+const getTextColorClass = (position: number): string => {
+  switch (position) {
+    case 0: // Rank 1 (Best)
+      return "text-blue-600"
+    case 1: // Rank 2
+      return "text-cyan-600"
+    case 2: // Rank 3 (Neutral)
+      return "text-gray-600"
+    case 3: // Rank 4
+      return "text-amber-600"
+    case 4: // Rank 5 (Worst)
+      return "text-red-600"
+    case 5: // Rank 6 (Worst)
+      return "text-red-700"
+    default:
+      return "text-gray-600"
   }
+}
 
-  // Take the first 10 groups
-  const selectedGroups = allGroups.slice(0, 10)
-
-  // For each selected group, pick one random image
-  const sequence = selectedGroups.map((groupIndex) => {
-    const baseIndex = groupIndex * 10
-    const randomOffset = Math.floor(random() * 10)
-    return baseIndex + randomOffset + 1 // +1 because images are 1-indexed
-  })
-
-  return sequence
+// Helper function to get background color based on rank position
+const getBgColorClass = (position: number): string => {
+  switch (position) {
+    case 0: // Rank 1 (Best)
+      return "bg-blue-50"
+    case 1: // Rank 2
+      return "bg-cyan-50"
+    case 2: // Rank 3 (Neutral)
+      return "bg-gray-50"
+    case 3: // Rank 4
+      return "bg-amber-50"
+    case 4: // Rank 5 (Worst)
+      return "bg-red-50"
+    case 5: // Rank 6 (Worst)
+      return "bg-red-100"
+    default:
+      return "bg-gray-50"
+  }
 }
 
 // Generate a deterministic random order based on a seed
-const getRandomOrder = (array, seed) => {
+const getRandomOrder = (array: string[], seed: number): string[] => {
   const newArray = [...array]
   // Simple deterministic shuffle algorithm
   for (let i = newArray.length - 1; i > 0; i--) {
@@ -75,914 +84,410 @@ const getRandomOrder = (array, seed) => {
   return newArray
 }
 
-// Generate the original model sequence for a question if it doesn't exist
-const getOriginalModelSequence = (imageId) => {
-  // If we already have a stored sequence for this image, use it
-  const modelSequences = {} // Declare modelSequences variable here
-  if (modelSequences[imageId]) {
-    return modelSequences[imageId]
-  }
-
-  // Otherwise, generate a deterministic random order based on the image ID
-  // Make sure we're using the full models array with all 6 models including TARGET
-  const seed = imageId * 9301 + 49297
-  return getRandomOrder([...models], seed)
+interface ImageComparisonRankingProps {
+  inputImage: number
+  models: string[]
+  onSubmit: (ranking: string[], originalSequence: string[]) => void
+  onChange?: (ranking: string[]) => void
+  initialRanking?: string[] | null
+  initialSequence?: string[] | null
 }
 
-export default function TestPage() {
-  const router = useRouter()
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [testSequence, setTestSequence] = useState([])
-  const [rankings, setRankings] = useState({})
-  const [modelSequences, setModelSequences] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [showCompletionDialog, setShowCompletionDialog] = useState(false)
-  const [showExportDialog, setShowExportDialog] = useState(false)
-  const [clinicianId, setClinicianId] = useState("")
-  const [clinicianData, setClinicianData] = useState({})
-  const [completedQuestions, setCompletedQuestions] = useState(new Set())
-  // New state to track modified questions that haven't been saved
-  const [modifiedQuestions, setModifiedQuestions] = useState(new Set())
-  const [supabaseError, setSupabaseError] = useState(null)
+export function ImageComparisonRanking({
+  inputImage,
+  models,
+  onSubmit,
+  onChange,
+  initialRanking,
+  initialSequence,
+}: ImageComparisonRankingProps) {
+  // State for model order/ranking
+  const [modelRanking, setModelRanking] = useState<string[]>([])
+  const [selectedModel, setSelectedModel] = useState<string | null>(null)
+  const [draggedModel, setDraggedModel] = useState<string | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [fullSizeImage, setFullSizeImage] = useState<{ src: string; alt: string } | null>(null)
   const [isMounted, setIsMounted] = useState(false)
-  const [showSavedIndicator, setShowSavedIndicator] = useState(false)
-  const [retryingConnection, setRetryingConnection] = useState(false)
-  const savedIndicatorTimeoutRef = useRef(null)
-  // Track current ranking for comparison
-  const [currentRanking, setCurrentRanking] = useState(null)
-  // Add a key to force re-render of the component
-  const [rankingKey, setRankingKey] = useState(0)
-  // Debug mode - hidden from regular users
-  const [debugMode, setDebugMode] = useState(false)
-  // Admin mode - for accessing debug features
-  const [isAdmin, setIsAdmin] = useState(false)
-  // Secret key sequence for admin mode
-  const keySequence = useRef([])
-  const adminKeyCombo = "debug"
 
-  // Modify the initializeTest function to properly handle session state
-  // Replace the existing initializeTest function with this updated version
-  const initializeTest = useCallback(async () => {
-    // Only access localStorage on the client side
-    if (typeof window !== "undefined") {
-      setLoading(true)
+  // Store the original sequence of models for this question
+  const [originalSequence, setOriginalSequence] = useState<string[]>([])
 
-      // Ensure we have a device ID
-      getOrCreateDeviceId()
+  // Map to store the letter for each model
+  const [modelLetters, setModelLetters] = useState<Record<string, string>>({})
 
-      // Check if coming from practice page
-      const isPracticeCompleted = localStorage.getItem("oct_practice_completed") === "true"
+  // Track the question id to reset when question changes
+  const lastInputImageRef = useRef<number | null>(null)
+  const initialRankingRef = useRef<string[] | null>(null)
+  const initialSequenceRef = useRef<string[] | null>(null)
+  const isInitializedRef = useRef(false)
 
-      // Get clinician ID and data from localStorage
-      const storedClinicianId = getFromStorage(CLINICIAN_ID_KEY, "")
-      if (!storedClinicianId && !isPracticeCompleted) {
-        // Only redirect to login if not coming from practice
-        router.push("/login")
-        return
-      }
+  const { isMobile, isTablet, isTouchDevice } = useDeviceType()
 
-      if (storedClinicianId) {
-        setClinicianId(storedClinicianId)
-
-        // Collect all clinician data from localStorage
-        setClinicianData({
-          id: storedClinicianId,
-          name: getFromStorage("oct_clinician_name", "Anonymous"),
-          institution: getFromStorage("oct_clinician_institution", "Not specified"),
-          experience: getFromStorage("oct_clinician_experience", "unknown"),
-          created_at: getFromStorage("oct_clinician_created_at", new Date().toISOString()),
-        })
-      }
-
-      // Generate a new test sequence
-      const sequence = generateTestSequence()
-      setTestSequence(sequence)
-
-      // Log the test sequence for debugging
-      console.log("Test sequence (question order):", sequence)
-
-      // Try to load saved rankings and sequences from localStorage
-      try {
-        const savedRankings = localStorage.getItem("oct_rankings")
-        const savedSequences = localStorage.getItem("oct_model_sequences")
-
-        if (savedRankings && savedSequences) {
-          try {
-            const parsedRankings = JSON.parse(savedRankings)
-            const parsedSequences = JSON.parse(savedSequences)
-
-            // Validate the rankings - check if they match our current test sequence
-            let validRankings = false
-            for (const imageId of sequence) {
-              if (parsedRankings[imageId]) {
-                validRankings = true
-                break
-              }
-            }
-
-            if (validRankings) {
-              setRankings(parsedRankings)
-              setModelSequences(parsedSequences)
-
-              // Mark questions as completed if they have rankings
-              const newCompleted = new Set()
-              sequence.forEach((imageId, index) => {
-                if (parsedRankings[imageId]) {
-                  newCompleted.add(index)
-                }
-              })
-              setCompletedQuestions(newCompleted)
-            } else {
-              // If rankings don't match our sequence, clear them
-              console.log("Saved rankings don't match current test sequence, starting fresh")
-              localStorage.removeItem("oct_rankings")
-              localStorage.removeItem("oct_model_sequences")
-              setRankings({})
-              setModelSequences({})
-              setCompletedQuestions(new Set())
-            }
-          } catch (error) {
-            console.error("Error parsing saved data:", error)
-            localStorage.removeItem("oct_rankings")
-            localStorage.removeItem("oct_model_sequences")
-            setRankings({})
-            setModelSequences({})
-            setCompletedQuestions(new Set())
-          }
-        } else {
-          // No saved rankings found
-          setRankings({})
-          setModelSequences({})
-          setCompletedQuestions(new Set())
-        }
-      } catch (error) {
-        console.error("Error loading saved data:", error)
-        setRankings({})
-        setModelSequences({})
-        setCompletedQuestions(new Set())
-      }
-
-      // Check if Supabase environment variables are available
-      if (!hasSupabaseEnvVars()) {
-        console.warn("Supabase environment variables not found")
-        setSupabaseError("Supabase environment variables not found")
-      } else {
-        // Test Supabase connection only if environment variables are available
-        try {
-          const { success, error } = await testSupabaseConnection()
-          if (!success) {
-            console.warn("Supabase connection test failed:", error)
-            setSupabaseError(error || "Could not connect to database")
-          }
-        } catch (error) {
-          console.error("Error testing Supabase connection:", error)
-          setSupabaseError("Error testing Supabase connection")
-        }
-      }
-
-      setLoading(false)
-    }
-  }, [router])
-
-  // Handle keyboard events for secret admin mode
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Only track alphabetic keys
-      if (/^[a-z]$/i.test(e.key)) {
-        keySequence.current.push(e.key.toLowerCase())
-
-        // Keep only the last N keys where N is the length of the admin combo
-        if (keySequence.current.length > adminKeyCombo.length) {
-          keySequence.current.shift()
-        }
-
-        // Check if the sequence matches the admin combo
-        const currentSequence = keySequence.current.join("")
-        if (currentSequence === adminKeyCombo) {
-          setIsAdmin(true)
-          console.log("Admin mode activated")
-        }
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [])
-
+  // Check if we're on client-side
   useEffect(() => {
     setIsMounted(true)
-    initializeTest()
+  }, [])
 
-    // Check for debug mode in URL
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search)
-      if (urlParams.get("debug") === "true") {
-        setDebugMode(true)
-        setIsAdmin(true) // Also set admin mode when debug is activated via URL
-        console.log("Debug mode activated via URL parameter")
-      }
-    }
-
-    // Clear any existing timeouts on unmount
-    return () => {
-      if (savedIndicatorTimeoutRef.current) {
-        clearTimeout(savedIndicatorTimeoutRef.current)
-      }
-    }
-  }, [initializeTest])
-
-  // Update current ranking when changing questions
+  // Reset when question changes or initialRanking changes
   useEffect(() => {
-    if (testSequence.length > 0) {
-      const currentImage = testSequence[currentImageIndex]
-      const savedRanking = rankings[currentImage] || null
-      setCurrentRanking(savedRanking ? [...savedRanking] : null)
-
-      // Force re-render of the component when changing questions
-      setRankingKey((prev) => prev + 1)
+    if (
+      lastInputImageRef.current !== inputImage ||
+      JSON.stringify(initialRankingRef.current) !== JSON.stringify(initialRanking) ||
+      JSON.stringify(initialSequenceRef.current) !== JSON.stringify(initialSequence)
+    ) {
+      lastInputImageRef.current = inputImage
+      initialRankingRef.current = initialRanking ? [...initialRanking] : null
+      initialSequenceRef.current = initialSequence ? [...initialSequence] : null
+      isInitializedRef.current = false
     }
-  }, [currentImageIndex, rankings, testSequence])
+  }, [inputImage, initialRanking, initialSequence])
 
-  // Save rankings to localStorage whenever they change
+  // Initialize model ranking and letters
   useEffect(() => {
-    if (Object.keys(rankings).length > 0) {
-      try {
-        localStorage.setItem("oct_rankings", JSON.stringify(rankings))
-      } catch (error) {
-        console.error("Error saving rankings to localStorage:", error)
-      }
-    }
-  }, [rankings])
+    if (!isInitializedRef.current) {
+      let sequence: string[]
 
-  // Save model sequences to localStorage whenever they change
-  useEffect(() => {
-    if (Object.keys(modelSequences).length > 0) {
-      try {
-        localStorage.setItem("oct_model_sequences", JSON.stringify(modelSequences))
-      } catch (error) {
-        console.error("Error saving model sequences to localStorage:", error)
-      }
-    }
-  }, [modelSequences])
-
-  // Get the current image from the sequence
-  const currentImage = testSequence[currentImageIndex]
-
-  // Get the saved ranking for the current image
-  const currentSavedRanking = rankings[currentImage] || null
-
-  // Get the original model sequence for the current image
-  const currentModelSequence = modelSequences[currentImage] || null
-
-  const progress = testSequence.length > 0 ? (completedQuestions.size / testSequence.length) * 100 : 0
-
-  // Retry Supabase connection
-  const retrySupabaseConnection = async () => {
-    setRetryingConnection(true)
-    try {
-      // Check if environment variables are available first
-      if (!hasSupabaseEnvVars()) {
-        setSupabaseError("Supabase environment variables not found")
-        toast({
-          title: "Connection failed",
-          description: "Supabase environment variables are missing. Your answers will be saved locally.",
-          variant: "destructive",
-        })
-        setRetryingConnection(false)
-        return
-      }
-
-      const { success, error } = await testSupabaseConnection()
-      if (success) {
-        setSupabaseError(null)
-        toast({
-          title: "Connection restored",
-          description: "Successfully connected to the database.",
-          variant: "success",
-        })
+      // If we have a saved original sequence, use it
+      if (initialSequence && initialSequence.length === models.length) {
+        sequence = [...initialSequence]
       } else {
-        setSupabaseError(error || "Could not connect to database")
-        toast({
-          title: "Connection failed",
-          description: "Could not connect to the database. Your answers will be saved locally.",
-          variant: "destructive",
-        })
+        // Otherwise generate a deterministic random order for this question
+        const seed = inputImage * 9301 + 49297
+        sequence = getRandomOrder(models, seed)
       }
-    } catch (error) {
-      console.error("Error retrying Supabase connection:", error)
-      setSupabaseError("Could not connect to database")
-    } finally {
-      setRetryingConnection(false)
-    }
-  }
 
-  // Navigate to a specific question
-  const navigateToQuestion = (index) => {
-    // Check if current question has unsaved changes
-    if (modifiedQuestions.has(currentImageIndex)) {
-      const confirmNavigation = window.confirm(
-        "You have unsaved changes to this question. Navigate away without saving?",
-      )
-      if (!confirmNavigation) {
-        return
-      }
-    }
+      // Store the original sequence
+      setOriginalSequence(sequence)
 
-    setCurrentImageIndex(index)
-  }
-
-  // Check if ranking has changed
-  const hasRankingChanged = (newRanking) => {
-    if (!currentRanking) return true
-    if (newRanking.length !== currentRanking.length) return true
-
-    for (let i = 0; i < newRanking.length; i++) {
-      if (newRanking[i] !== currentRanking[i]) return true
-    }
-
-    return false
-  }
-
-  // Handle ranking changes (without submitting)
-  const handleRankingChange = (modelOrder) => {
-    if (hasRankingChanged(modelOrder)) {
-      // Mark this question as modified
-      const newModified = new Set(modifiedQuestions)
-      newModified.add(currentImageIndex)
-      setModifiedQuestions(newModified)
-
-      // Update current ranking for comparison
-      setCurrentRanking([...modelOrder])
-    }
-  }
-
-  // Handle ranking submission for current image
-  const handleRankingSubmit = (modelOrder, originalSequence) => {
-    // Debug logging to track TARGET model
-    console.log("Submitting ranking for image:", currentImage)
-    console.log("Model order:", modelOrder)
-    console.log("Original sequence:", originalSequence)
-    console.log("Contains TARGET:", modelOrder.includes("TARGET") && originalSequence.includes("TARGET"))
-
-    // Store the final ranking (what the user submitted)
-    const newRankings = {
-      ...rankings,
-      [currentImage]: modelOrder,
-    }
-    setRankings(newRankings)
-
-    // Store the original model sequence that was shown to the user
-    // This is crucial - we need to know the original order to interpret the ranking
-    const newModelSequences = {
-      ...modelSequences,
-      [currentImage]: originalSequence || getOriginalModelSequence(currentImage),
-    }
-    setModelSequences(newModelSequences)
-
-    // Mark this question as completed
-    const newCompleted = new Set(completedQuestions)
-    newCompleted.add(currentImageIndex)
-    setCompletedQuestions(newCompleted)
-
-    // Remove from modified questions since it's now saved
-    const newModified = new Set(modifiedQuestions)
-    newModified.delete(currentImageIndex)
-    setModifiedQuestions(newModified)
-
-    // Update current ranking for comparison
-    setCurrentRanking([...modelOrder])
-
-    // Show saved indicator
-    setShowSavedIndicator(true)
-
-    // Clear any existing timeout
-    if (savedIndicatorTimeoutRef.current) {
-      clearTimeout(savedIndicatorTimeoutRef.current)
-    }
-
-    // Hide the indicator after 1.5 seconds
-    savedIndicatorTimeoutRef.current = setTimeout(() => {
-      setShowSavedIndicator(false)
-    }, 1500)
-
-    // Check if all questions are now completed
-    if (newCompleted.size === testSequence.length) {
-      // All questions are completed, show completion dialog
-      setShowCompletionDialog(true)
-    } else if (currentImageIndex < testSequence.length - 1) {
-      // Move to next question if not on the last one
-      const nextIndex = currentImageIndex + 1
-      setCurrentImageIndex(nextIndex)
-
-      if (typeof window !== "undefined") {
-        window.scrollTo(0, 0)
-      }
-    }
-  }
-
-  // Submit all rankings to the database
-  const submitAllRankings = async () => {
-    // Check if all questions have been answered
-    if (completedQuestions.size < testSequence.length) {
-      toast({
-        title: "Incomplete evaluation",
-        description: `Please answer all ${testSequence.length} questions before submitting.`,
-        variant: "destructive",
+      // Assign letters A-F to models based on their position in the original sequence
+      const letters: Record<string, string> = {}
+      sequence.forEach((model, index) => {
+        letters[model] = String.fromCharCode(65 + index) // A, B, C, D, E, F
       })
-      setShowCompletionDialog(false)
-      return
-    }
+      setModelLetters(letters)
 
-    // Check if there are any unsaved changes
-    if (modifiedQuestions.size > 0) {
-      toast({
-        title: "Unsaved changes",
-        description: `You have unsaved changes to ${modifiedQuestions.size} question(s). Please save them before submitting.`,
-        variant: "warning",
-      })
-      setShowCompletionDialog(false)
-      return
-    }
-
-    // Check if already submitted in this session
-    if (hasSubmittedInSession()) {
-      toast({
-        title: "Already submitted",
-        description: "You have already submitted your results in this session.",
-        variant: "warning",
-      })
-      setShowCompletionDialog(false)
-      return
-    }
-
-    setSubmitting(true)
-
-    // Check if Supabase is available
-    if (!hasSupabaseEnvVars() || supabaseError) {
-      console.warn("Supabase not available, showing export dialog")
-      setSupabaseError(supabaseError || "Supabase environment variables not found")
-
-      // Save data to session storage for the thank you page
-      sessionStorage.setItem("rankings", JSON.stringify(rankings))
-      sessionStorage.setItem("modelSequences", JSON.stringify(modelSequences))
-      sessionStorage.setItem("clinicianId", clinicianData.id)
-      sessionStorage.setItem("clinicianName", clinicianData.name)
-      sessionStorage.setItem("clinicianInstitution", clinicianData.institution)
-      sessionStorage.setItem("clinicianExperience", clinicianData.experience)
-      sessionStorage.setItem("clinicianCreatedAt", clinicianData.created_at)
-      sessionStorage.setItem("supabaseSaveStatus", "failed")
-
-      // Show export dialog
-      setShowExportDialog(true)
-      setSubmitting(false)
-      setShowCompletionDialog(false)
-      return
-    }
-
-    try {
-      // First, check if we can connect to Supabase
-      const { success: connectionSuccess, error: connectionError } = await testSupabaseConnection()
-
-      if (!connectionSuccess) {
-        console.error("Connection test failed:", connectionError)
-        throw new Error(`Connection test failed: ${connectionError}`)
+      // If we have a saved ranking, use it
+      if (initialRanking && initialRanking.length === models.length) {
+        setModelRanking([...initialRanking])
+      } else {
+        // Otherwise use the original sequence as the initial ranking
+        setModelRanking([...sequence])
       }
 
-      console.log("Connection test successful, proceeding with data submission")
+      // Set the first model as selected by default
+      setSelectedModel(initialRanking ? initialRanking[0] : sequence[0])
 
-      // Save all rankings to Supabase - pass clinician data to ensure it exists
-      const { success, error } = await saveRankingsToSupabase(
-        {
-          rankings,
-          modelSequences,
-          testSequence, // Pass the test sequence to help with question numbering
-        },
-        clinicianId,
-        clinicianData, // Pass clinician data to ensure it exists
-      )
+      isInitializedRef.current = true
+    }
+  }, [inputImage, models, initialRanking, initialSequence])
 
-      if (!success) {
-        console.error("Error saving rankings:", error)
-        throw new Error(`Error saving rankings: ${error}`)
+  // Use mobile version for mobile devices or touch devices
+  if (isMobile || isTablet || isTouchDevice) {
+    return (
+      <MobileImageComparisonRanking
+        inputImage={inputImage}
+        models={models}
+        onSubmit={onSubmit}
+        onChange={onChange}
+        initialRanking={initialRanking}
+        initialSequence={initialSequence}
+      />
+    )
+  }
+
+  // Get the correct image filename based on model and image number
+  const getImageFilename = (model: string | null): string => {
+    if (model === null) {
+      // Input image
+      return `${inputImage}.png`
+    } else if (model === "TARGET") {
+      // Target image
+      return `${inputImage}.png`
+    } else if (model === "BBDM") {
+      // BBDM uses x_{index}_0.png format (0-indexed)
+      return `x_${inputImage - 1}_0.png`
+    } else {
+      // Other models use output_{number}.png format (1-indexed)
+      return `output_${inputImage}.png`
+    }
+  }
+
+  // Get image source URL
+  const getImageSrc = (model: string | null): string => {
+    if (model === null) {
+      // Input image
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/${getImageFilename(null)}`
+    } else if (model === "TARGET") {
+      // Target image
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/targets/${getImageFilename(model)}`
+    } else {
+      // Model image
+      return `https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/${model}/${getImageFilename(model)}`
+    }
+  }
+
+  // Handle drag start
+  const handleDragStart = (model: string) => {
+    setDraggedModel(model)
+  }
+
+  // Handle drag over
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    setDragOverIndex(index)
+  }
+
+  // Handle drop to comparison area
+  const handleDropToComparison = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (draggedModel) {
+      setSelectedModel(draggedModel)
+      setDraggedModel(null)
+    }
+  }
+
+  // Handle drop to reorder - using direct swap
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+
+    if (draggedModel) {
+      const sourceIndex = modelRanking.indexOf(draggedModel)
+
+      if (sourceIndex !== -1 && sourceIndex !== targetIndex) {
+        // Create a new array with the same items
+        const newRanking = [...modelRanking]
+
+        // Get the model at the target position
+        const targetModel = newRanking[targetIndex]
+
+        // Perform a direct swap - this ensures only the two items change positions
+        newRanking[targetIndex] = draggedModel
+        newRanking[sourceIndex] = targetModel
+
+        setModelRanking(newRanking)
+
+        // Notify parent of ranking change
+        if (onChange) {
+          onChange(newRanking)
+        }
       }
 
-      console.log("All rankings submitted successfully")
-
-      // Save all data to session storage for the thank you page
-      sessionStorage.setItem("rankings", JSON.stringify(rankings))
-      sessionStorage.setItem("modelSequences", JSON.stringify(modelSequences))
-      sessionStorage.setItem("clinicianId", clinicianData.id)
-      sessionStorage.setItem("clinicianName", clinicianData.name)
-      sessionStorage.setItem("clinicianInstitution", clinicianData.institution)
-      sessionStorage.setItem("clinicianExperience", clinicianData.experience)
-      sessionStorage.setItem("clinicianCreatedAt", clinicianData.created_at)
-      sessionStorage.setItem("supabaseSaveStatus", "success")
-
-      // Mark as submitted in this session
-      markSubmittedInSession()
-
-      // Clear error flag
-      removeFromStorage("oct_supabase_error")
-
-      router.push("/thank-you")
-    } catch (error) {
-      console.error("Error submitting rankings:", error)
-
-      // Store the error message in localStorage
-      const errorMessage = error?.message || "Unknown error occurred"
-      saveToStorage("oct_supabase_error", errorMessage)
-      setSupabaseError(errorMessage)
-
-      // Save data to session storage for the thank you page
-      sessionStorage.setItem("rankings", JSON.stringify(rankings))
-      sessionStorage.setItem("modelSequences", JSON.stringify(modelSequences))
-      sessionStorage.setItem("clinicianId", clinicianData.id)
-      sessionStorage.setItem("clinicianName", clinicianData.name)
-      sessionStorage.setItem("clinicianInstitution", clinicianData.institution)
-      sessionStorage.setItem("clinicianExperience", clinicianData.experience)
-      sessionStorage.setItem("clinicianCreatedAt", clinicianData.created_at)
-      sessionStorage.setItem("supabaseSaveStatus", "failed")
-
-      // Show export dialog instead of error toast
-      setShowExportDialog(true)
-      setSubmitting(false)
-      setShowCompletionDialog(false)
+      setDraggedModel(null)
+      setDragOverIndex(null)
     }
   }
 
-  // Export data as CSV
-  const exportDataAsCSV = () => {
-    try {
-      // Check if there are any unsaved changes
-      if (modifiedQuestions.size > 0) {
-        toast({
-          title: "Unsaved changes",
-          description: `You have unsaved changes to ${modifiedQuestions.size} question(s). Please save them before exporting.`,
-          variant: "warning",
-        })
-        return
-      }
-
-      // Format the data for export - combine clinician and ranking data
-      const formattedData = formatRankingsForExport(
-        rankings,
-        modelSequences,
-        clinicianId,
-        clinicianData,
-        testSequence, // Pass the test sequence to help with question numbering
-      )
-
-      // Define headers for the combined CSV
-      const headers = [
-        "clinician_id",
-        "clinician_name",
-        "clinician_institution",
-        "clinician_experience",
-        "clinician_created_at",
-        "image_id",
-        "model_rankings",
-        "model_sequence",
-        "question_number",
-        "submitted_at",
-      ]
-
-      // Create and download the CSV
-      const csvContent = createCSV(headers, formattedData)
-      downloadCSV(csvContent, `oct_evaluation_results_${clinicianId}`)
-
-      // Mark as submitted in this session
-      markSubmittedInSession()
-
-      // Navigate to thank you page
-      router.push("/thank-you")
-    } catch (error) {
-      console.error("Error exporting data:", error)
-      toast({
-        title: "Error",
-        description: "There was an error exporting your data. Please try again.",
-        variant: "destructive",
-      })
-    }
+  // Handle click on model image
+  const handleModelClick = (model: string) => {
+    setSelectedModel(model)
   }
 
-  // Clear session data and restart test
-  const clearSessionAndRestart = () => {
-    if (window.confirm("This will clear all your current progress and restart the test. Are you sure?")) {
-      localStorage.removeItem("oct_rankings")
-      localStorage.removeItem("oct_model_sequences")
-      sessionStorage.removeItem("oct_submission_timestamp")
-
-      setRankings({})
-      setModelSequences({})
-      setCompletedQuestions(new Set())
-      setModifiedQuestions(new Set())
-      setCurrentImageIndex(0)
-
-      toast({
-        title: "Test reset",
-        description: "All progress has been cleared and the test has been restarted.",
-        variant: "info",
-      })
-    }
+  // View full-size image
+  const handleViewFullImage = (model: string | null, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    setFullSizeImage({
+      src: getImageSrc(model),
+      alt: model ? `Enhanced Image ${modelLetters[model]}` : "Low-quality OCT image",
+    })
   }
 
-  // Get question status icon/indicator
-  const getQuestionStatusIndicator = (index) => {
-    if (modifiedQuestions.has(index)) {
-      return (
-        <span className="ml-1 text-amber-500">
-          <Pencil className="h-3 w-3 inline" />
-        </span>
-      )
-    } else if (completedQuestions.has(index)) {
-      return <span className="ml-1 text-green-500">✓</span>
-    }
-    return null
-  }
-
-  // Toggle debug mode - only available in admin mode
-  const toggleDebugMode = () => {
-    setDebugMode(!debugMode)
+  // Handle submission - pass both the ranking and original sequence
+  const handleSubmit = () => {
+    onSubmit(modelRanking, originalSequence)
   }
 
   // Don't render anything during SSR
   if (!isMounted) {
-    return null
-  }
-
-  if (loading) {
-    return (
-      <div className="w-full px-4 py-10 flex items-center justify-center h-[80vh]">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-4 gradient-text">Loading test...</h2>
-          <div className="w-[300px] h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div className="progress-bar h-full w-0"></div>
-          </div>
-        </div>
-      </div>
-    )
+    return <div className="min-h-[200px] bg-gray-50 rounded-md flex items-center justify-center">Loading...</div>
   }
 
   return (
-    <div className="w-full px-0 py-0.5 mx-auto">
-      <Card className="w-full">
-        <CardHeader className="pb-0 pt-1 px-2 modern-header">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center justify-between text-lg">
-              <span className="gradient-text">
-                Question {currentImageIndex + 1} of {testSequence.length}
-              </span>
-              <span className="text-sm font-normal text-gray-500 ml-4">Progress: {Math.round(progress)}%</span>
-            </CardTitle>
+      <div className="flex flex-col space-y-2 w-full">
+      {/* Main comparison area with dotted border and label - more compact */}
+      <div className="relative border-2 border-dashed border-blue-300 rounded-lg p-2">
+        {/* Comparison Area Label */}
+        <div className="absolute -top-2.5 left-4 bg-white px-1.5 text-blue-600 text-xs font-medium">Comparison Area</div>
 
-            {/* Question navigation - moved to header to save vertical space */}
-            <div className="flex flex-wrap gap-1 ml-4">
-              {testSequence.map((_, index) => (
-                <Button
-                  key={index}
-                  variant={index === currentImageIndex ? "default" : "outline"}
-                  size="sm"
-                  className={cn(
-                    index === currentImageIndex ? "question-button-active" : "question-button",
-                    modifiedQuestions.has(index) ? "question-button-modified" : "",
-                    completedQuestions.has(index) ? "question-button-completed" : "",
-                    "h-7 min-w-7 px-1", // Smaller buttons
-                  )}
-                  onClick={() => navigateToQuestion(index)}
-                >
-                  {index + 1}
-                  {getQuestionStatusIndicator(index)}
-                </Button>
-              ))}
-            </div>
-
-            {/* Reset button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearSessionAndRestart}
-              className="ml-2 text-red-600 border-red-200 hover:bg-red-50"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" /> Reset
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-2 space-y-1 px-4">
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-1">
-            <div className="progress-bar h-full" style={{ width: `${progress}%` }}></div>
-          </div>
-
-          {/* Debug info - only shown when debug mode is active */}
-          {debugMode && (
-            <div className="bg-gray-100 p-2 rounded text-xs font-mono mb-2">
-              <div>
-                <strong>Current Image ID:</strong> {currentImage}
-              </div>
-              <div>
-                <strong>Question Number:</strong> {currentImageIndex + 1}
-              </div>
-              <div>
-                <strong>Test Sequence:</strong> {JSON.stringify(testSequence)}
-              </div>
-              <div>
-                <strong>Current Model Sequence:</strong> {JSON.stringify(currentModelSequence)}
-              </div>
-              <div>
-                <strong>Current Saved Ranking:</strong> {JSON.stringify(currentSavedRanking)}
-              </div>
-            </div>
-          )}
-
-          {/* Alerts in a row to save vertical space */}
-          <div className="flex flex-wrap gap-1 mb-1">
-            {supabaseError && (
-              <Alert variant="destructive" className="py-1 bg-red-50 border-red-200 flex-1 min-w-[300px]">
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex items-center">
-                    <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-                    <AlertDescription className="text-red-700 text-xs">
-                      {supabaseError.includes("environment variables")
-                        ? "Database connection not configured. Your answers will be saved locally."
-                        : "There was an error connecting to the database. Your answers will be saved locally."}
-                    </AlertDescription>
-                  </div>
-                  {!supabaseError.includes("environment variables") && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={retrySupabaseConnection}
-                      disabled={retryingConnection}
-                      className="ml-2 min-w-[60px] h-6 border-red-200 text-red-700 hover:bg-red-50"
-                    >
-                      {retryingConnection ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Retry"}
-                    </Button>
-                  )}
-                </div>
-              </Alert>
-            )}
-
-            {hasSubmittedInSession() && (
-              <Alert variant="warning" className="py-1 bg-amber-50 border-amber-200 flex-1 min-w-[300px]">
-                <div className="flex items-center">
-                  <Lock className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
-                  <AlertDescription className="text-xs text-amber-700">
-                    You have already submitted your results. You can review your answers, but cannot submit again.
-                  </AlertDescription>
-                </div>
-              </Alert>
-            )}
-
-            {modifiedQuestions.has(currentImageIndex) && (
-              <Alert className="py-1 bg-amber-50 border-amber-200 flex-1 min-w-[300px]">
-                <div className="flex items-center">
-                  <Pencil className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
-                  <AlertDescription className="text-xs text-amber-700">
-                    You have unsaved changes to this question. Click "Submit Ranking" to save your changes.
-                  </AlertDescription>
-                </div>
-              </Alert>
-            )}
-          </div>
-
-          {/* Image comparison and ranking */}
-          {currentImage && (
-            <ImageComparisonRanking
-              key={`ranking-${currentImage}-${rankingKey}`}
-              inputImage={currentImage}
-              models={models}
-              onSubmit={handleRankingSubmit}
-              onChange={handleRankingChange}
-              initialRanking={currentSavedRanking}
-              initialSequence={currentModelSequence}
-            />
-          )}
-
-          {/* Saved indicator */}
-          {showSavedIndicator && (
-            <div className="fixed bottom-4 right-4 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md shadow-lg flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Ranking saved
-            </div>
-          )}
-
-          {/* Debug mode toggle - only visible in admin mode */}
-          {isAdmin && (
-            <div className="flex justify-end mt-2">
-              <Button variant="outline" size="sm" onClick={toggleDebugMode} className="text-xs text-gray-500">
-                {debugMode ? "Hide Debug Info" : "Show Debug Info"}
+        <div className="flex flex-col xl:flex-row justify-center items-center xl:items-start gap-2">
+          {/* Original image on the left */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-sm">Low-quality OCT Image (ART10):</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 bg-gray-100 hover:bg-gray-200"
+                onClick={(e) => handleViewFullImage(null, e)}
+              >
+                <ZoomIn className="h-4 w-4" />
               </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Completion Dialog */}
-      <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
-        <DialogContent className="modern-dialog p-6 w-[400px] max-w-[95vw]">
-          <div className="text-center mb-4">
-            <h2 className="text-xl font-bold mb-2 gradient-text">Complete Evaluation</h2>
-            <p className="text-sm text-gray-600">
-              You have ranked all the images. Would you like to submit your evaluation now?
-            </p>
-            {modifiedQuestions.size > 0 && (
-              <Alert variant="warning" className="mt-4 py-2 bg-amber-50 border-amber-200">
-                <div className="flex items-center">
-                  <Pencil className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
-                  <AlertDescription className="text-xs text-amber-700">
-                    You have unsaved changes to {modifiedQuestions.size} question(s). Please save them before
-                    submitting.
-                  </AlertDescription>
-                </div>
-              </Alert>
-            )}
-          </div>
-          <div className="flex justify-end space-x-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowCompletionDialog(false)}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            <div
+              className="relative border border-gray-300 cursor-pointer bg-black"
+              onClick={() => handleViewFullImage(null)}
+              style={{ width: "768px", height: "496px" }}
             >
-              Review Answers
-            </Button>
-            <Button
-              onClick={submitAllRankings}
-              disabled={submitting || hasSubmittedInSession() || modifiedQuestions.size > 0}
-              className="button-gradient"
-            >
-              {submitting ? "Submitting..." : "Submit Evaluation"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Export Dialog */}
-      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent className="modern-dialog p-6 w-[450px] max-w-[95vw]">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold mb-2 gradient-text">Database Connection Error</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              {supabaseError && supabaseError.includes("environment variables")
-                ? "The database connection is not configured. You can export your results as a CSV file."
-                : "We couldn't connect to our database to save your results. This could be due to network issues or because the app hasn't been deployed yet."}
-            </p>
-            <Alert variant="destructive" className="mb-4 py-2 bg-red-50 border-red-200">
-              <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-              <AlertDescription className="text-xs text-red-700">Error: {supabaseError}</AlertDescription>
-            </Alert>
-            {modifiedQuestions.size > 0 && (
-              <Alert variant="warning" className="mb-4 py-2 bg-amber-50 border-amber-200">
-                <div className="flex items-center">
-                  <Pencil className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500" />
-                  <AlertDescription className="text-xs text-amber-700">
-                    You have unsaved changes to {modifiedQuestions.size} question(s). Please save them before exporting.
-                  </AlertDescription>
-                </div>
-              </Alert>
-            )}
-            <p className="text-sm mb-2 text-gray-600">
-              You can export your results as a CSV file, which you can then send to the researchers or upload later.
-            </p>
-            <p className="text-sm font-medium mb-2 text-gray-700">
-              Please send the downloaded CSV file to one of these email addresses:
-            </p>
-            <div className="flex flex-col gap-1 mb-4">
-              <a
-                href="mailto:simone.sarrocco@unibas.ch"
-                className="text-blue-600 hover:underline flex items-center text-sm"
-              >
-                <Mail className="h-4 w-4 mr-1" /> simone.sarrocco@unibas.ch
-              </a>
-              <a
-                href="mailto:philippe.valmaggia@unibas.ch"
-                className="text-blue-600 hover:underline flex items-center text-sm"
-              >
-                <Mail className="h-4 w-4 mr-1" /> philippe.valmaggia@unibas.ch
-              </a>
+              {/* Using a regular img tag with fixed dimensions to ensure exact size */}
+              <img
+                src={getImageSrc(null) || "/placeholder.svg"}
+                alt="Low-quality OCT image (ART10)"
+                width="768"
+                height="496"
+                style={{ width: "768px", height: "496px", objectFit: "none" }}
+              />
             </div>
           </div>
-          <div className="flex justify-end space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowExportDialog(false)}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              Go Back
-            </Button>
-            <Button onClick={exportDataAsCSV} className="button-gradient" disabled={modifiedQuestions.size > 0}>
-              <Download className="mr-2 h-4 w-4" />
-              Export Results as CSV
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* Custom positioning for the toaster */}
-      <div className="fixed top-4 left-4 z-50 max-w-xs">
-        <Toaster />
+          {/* Selected model image on the right */}
+          <div className="space-y-1" onDragOver={(e) => e.preventDefault()} onDrop={handleDropToComparison}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-sm">
+                {selectedModel
+                  ? `Selected Enhanced Image (${modelLetters[selectedModel]}):`
+                  : "Drag an image here to compare:"}
+              </h3>
+              {selectedModel && (
+                <div className="flex items-center gap-2">
+                  <span className="bg-white px-2 py-1 text-xs font-bold rounded border border-gray-300">
+                    {modelLetters[selectedModel]}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 bg-gray-100 hover:bg-gray-200"
+                    onClick={(e) => handleViewFullImage(selectedModel, e)}
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            {selectedModel ? (
+              <div
+                className="relative border border-gray-300 cursor-pointer bg-black"
+                onClick={() => handleViewFullImage(selectedModel)}
+                style={{ width: "768px", height: "496px" }}
+              >
+                {/* Purple highlight border - positioned outside with margin */}
+                <div className="absolute -inset-2 border-4 border-purple-500 pointer-events-none z-10"></div>
+
+                {/* Using a regular img tag with fixed dimensions to ensure exact size */}
+                <img
+                  src={getImageSrc(selectedModel) || "/placeholder.svg"}
+                  alt={`Enhanced Image ${modelLetters[selectedModel]}`}
+                  width="768"
+                  height="496"
+                  style={{ width: "768px", height: "496px", objectFit: "none" }}
+                />
+              </div>
+            ) : (
+              <div
+                className="flex items-center justify-center border border-dashed border-gray-300 bg-gray-50"
+                style={{ width: "768px", height: "496px" }}
+              >
+                <p className="text-gray-500">Drag an image here to compare</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Model ranking area - more compact with less vertical space */}
+      <div className="space-y-1 mt-2 w-full">
+        <div className="flex justify-between items-center">
+          <div className="flex-1">
+            <details className="bg-blue-50 border border-blue-200 rounded-md overflow-hidden">
+              <summary className="p-1.5 text-sm font-medium text-blue-700 cursor-pointer hover:bg-blue-100 transition-colors flex items-center">
+                <InfoIcon className="h-3 w-3 mr-1.5" /> Instructions (click to expand)
+                </summary>
+                <div className="px-2 py-1.5 text-xs border-t border-blue-200">
+                  <ul className="text-blue-800 space-y-1 list-disc list-inside">
+                    Click or drag an AI-enhanced image (from the ranking section below) into the Comparison Area to compare it side-by-side with the low-quality image in full resolution. Rank the enhanced images from Best (left) to Worst (right) in the ranking section below by drag & drop them in the desired position.
+                  </ul>
+                </div>
+          </details>
+        </div>
+          {/* Submit button moved to the right side to save vertical space */}
+          <Button onClick={handleSubmit} size="sm">
+            Submit Ranking
+          </Button>
+        </div>
+
+
+
+        <div className="flex flex-wrap gap-2 justify-center">
+          {modelRanking.map((model, index) => {
+            const borderColorClass = getBorderColorClass(index)
+            const bgColorClass = getBgColorClass(index)
+            const textColorClass = getTextColorClass(index)
+            const isDragging = draggedModel === model
+            const isDragOver = dragOverIndex === index
+            const letter = modelLetters[model] || "?"
+
+            return (
+              <div
+                key={model}
+                className="flex flex-col w-[calc(16.666%-8px)]" // Changed from 20% to 16.666% for 6 columns
+                draggable
+                onDragStart={() => handleDragStart(model)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={() => {
+                  setDraggedModel(null)
+                  setDragOverIndex(null)
+                }}
+              >
+                <div className="p-1 text-center font-semibold rounded-t-md text-base bg-gray-50 text-gray-700">
+                  {index === 0
+                    ? "🥇Best"
+                    : index === 1
+                      ? "🥈2nd Best"
+                      : index === 2
+                        ? "🥉3rd Best"
+                        : index === 3
+                          ? "4th Best"
+                          : index === 4
+                            ? "5th Best"
+                            : "Worst"}
+                </div>
+                <div
+                  className={cn(
+                    "relative border-2 rounded-b-md overflow-hidden cursor-pointer transition-all",
+                    "border-gray-300", // Simple gray border instead of colored ones
+                    isDragging ? "opacity-50" : "opacity-100",
+                    isDragOver ? "border-blue-500 border-dashed" : "",
+                    selectedModel === model ? "ring-4 ring-purple-500 ring-offset-2 border-purple-500" : "", // More prominent purple selection
+                  )}
+                  onClick={() => handleModelClick(model)}
+                >
+                  <div className="aspect-[1.55] relative">
+                    <Image
+                      src={getImageSrc(model) || "/placeholder.svg"}
+                      alt={`Enhanced Image ${letter}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <div className="absolute top-1 left-1 bg-white/80 px-2 py-1 text-sm font-bold rounded">{letter}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+
+
+      {/* Full-size image viewer */}
+      {fullSizeImage && (
+        <ImageViewer
+          src={fullSizeImage.src || "/placeholder.svg"}
+          alt={fullSizeImage.alt}
+          isOpen={!!fullSizeImage}
+          onClose={() => setFullSizeImage(null)}
+        />
+      )}
     </div>
   )
 }
