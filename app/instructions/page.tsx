@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, ArrowLeftRight, Smartphone, Send } from "lucide-react"
+import { Eye, ArrowLeftRight, Monitor, Send } from "lucide-react"
 import Image from "next/image"
 
 export default function InstructionsPage() {
