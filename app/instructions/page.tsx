@@ -88,7 +88,7 @@ export default function InstructionsPage() {
                   <div>
                     <h4 className="font-semibold text-green-900 text-lg">2. Rank</h4>
                     <p className="text-sm text-green-700">
-                      Drag & drop the 6 AI-enhanced images to rank them from Best (left) to Worst (right)
+                      Drag & drop the 6 AI-enhanced images to rank them from Best (left) to Worst (right).
                     </p>
                   </div>
                 </div>
@@ -134,6 +134,9 @@ export default function InstructionsPage() {
                     </span>
                   </div>
                 </div>
+                <p className="text-sm text-green-700">
+                  <strong>Important:</strong> the letter assigned to each image is not linked to a specific AI-model, it is just a label that will help you understand whether you have moved the image to another ranking position or not.
+                </p>
               </div>
             </div>
 

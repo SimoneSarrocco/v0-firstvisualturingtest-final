@@ -402,7 +402,8 @@ export function ImageComparisonRanking({
                 </summary>
                 <div className="px-2 py-1.5 text-xs border-t border-blue-200">
                   <ul className="text-blue-800 space-y-1 list-disc list-inside">
-                    Click or drag an AI-enhanced image (from the ranking section below) into the Comparison Area to compare it side-by-side with the low-quality image in full resolution. Rank the enhanced images from Best (left) to Worst (right) in the ranking section below by drag & drop them in the desired position.
+                    <li>Click on an AI-enhanced image (from the ranking section below) to display it in full-resolution in the righten side of the Comparison Area above to properly compare it side-by-side with the low-quality ART10 image (shown on the leften side).</li>
+                    <li>Rank the AI-enhanced images in the ranking section below from Best (left) to Worst (right) by dragging and dropping them in the desired position.</li>
                   </ul>
                 </div>
           </details>
