@@ -39,7 +39,7 @@ export default function Home() {
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 mb-4">
               Visual Turing Test
             </h1>
-            <p className="text-lg sm:text-xl text-gray-700">Vitreous OCT Image Enhancement Evaluation</p>
+            <p className="text-lg sm:text-xl text-gray-700">Regular OCT vs AI-Enhanced OCT Images</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
