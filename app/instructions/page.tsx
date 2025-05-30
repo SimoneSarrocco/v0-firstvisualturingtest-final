@@ -32,7 +32,7 @@ export default function InstructionsPage() {
                   <div>
                     <h4 className="font-semibold text-blue-900 text-lg">1. Compare</h4>
                     <p className="text-sm text-blue-700">
-                      By clicking on an AI-generated image from the ranking section below, you can display it in full resolution in this Comparison Area for a side-by-side detailed comparison with the low-quality counterpart.
+                      By clicking on an AI-enhanced image from the ranking section that you fill find at the bottom of each question, you can display it in full resolution in this Comparison Area for a side-by-side detailed comparison with the low-quality counterpart.
                     </p>
                   </div>
                 </div>
@@ -40,7 +40,7 @@ export default function InstructionsPage() {
                 <div className="relative rounded-md overflow-hidden border border-blue-300 bg-white p-4">
                   <div className="flex space-x-4">
                     <div className="flex-1">
-                      <div className="text-xs text-gray-600 mb-2 text-center">Low Quality (ART10)</div>
+                      <div className="text-xs text-gray-600 mb-2 text-center">Low Quality Image (ART10)</div>
                       <div className="relative">
                         <Image
                           src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/inputs/2.png"
@@ -129,7 +129,7 @@ export default function InstructionsPage() {
                   </div>
                   <div className="mt-3 text-center">
                     <span className="text-xs font-medium text-green-800 bg-green-50 px-2 py-1 rounded">
-                      Drag & drop to reorder from Best to Worst
+                      Ranking Section
                     </span>
                   </div>
                 </div>
