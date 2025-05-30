@@ -32,8 +32,7 @@ export default function InstructionsPage() {
                   <div>
                     <h4 className="font-semibold text-blue-900 text-lg">1. Compare</h4>
                     <p className="text-sm text-blue-700">
-                      By clicking on an AI-generated image from the section below, you can display it in full resolution
-                      side-by-side with the low-quality counterpart for an easier comparison.
+                      By clicking on an AI-generated image from the ranking section below, you can display it in full resolution in this Comparison Area for a side-by-side detailed comparison with the low-quality counterpart.
                     </p>
                   </div>
                 </div>
@@ -57,7 +56,7 @@ export default function InstructionsPage() {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <div className="text-xs text-blue-600 mb-2 text-center">Enhanced Version</div>
+                      <div className="text-xs text-blue-600 mb-2 text-center">AI-Enhanced Version</div>
                       <div className="relative">
                         <Image
                           src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/DDPM_7th_new/output_2.png"
@@ -75,7 +74,7 @@ export default function InstructionsPage() {
                   </div>
                   <div className="mt-3 text-center">
                     <span className="text-xs font-medium text-blue-800 bg-blue-50 px-2 py-1 rounded">
-                      Side-by-side comparison area
+                      Side-by-side Comparison Area
                     </span>
                   </div>
                 </div>
@@ -130,7 +129,7 @@ export default function InstructionsPage() {
                   </div>
                   <div className="mt-3 text-center">
                     <span className="text-xs font-medium text-green-800 bg-green-50 px-2 py-1 rounded">
-                      Drag & drop to reorder from best to worst
+                      Drag & drop to reorder from Best to Worst
                     </span>
                   </div>
                 </div>
