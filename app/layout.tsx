@@ -28,7 +28,7 @@ export default function RootLayout({
                 <img src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/Logo_Universita%CC%88tsspital_Basel.svg.png" alt="USB Logo" className="h-8 sm:h-10" />
               </div>
               <p className="mt-2 text-xs sm:text-sm text-gray-500 px-4 max-w-4xl mx-auto">
-                © {new Date().getFullYear()} OCT Image Enhancement Evaluation
+                © {new Date().getFullYear()} Regular OCT vs AI-Enhanced OCT Images 
               </p>
             </footer>
           </main>

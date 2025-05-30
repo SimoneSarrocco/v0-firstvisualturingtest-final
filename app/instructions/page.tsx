@@ -88,7 +88,7 @@ export default function InstructionsPage() {
                   <div>
                     <h4 className="font-semibold text-green-900 text-lg">2. Rank</h4>
                     <p className="text-sm text-green-700">
-                      Drag & drop to rank the 6 enhanced images from best (left) to worst (right)
+                      Drag & drop the 6 AI-enhanced images to rank them from Best (left) to Worst (right)
                     </p>
                   </div>
                 </div>

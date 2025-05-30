@@ -83,7 +83,7 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="flex flex-col items-center">
-                      <span className="text-sm text-gray-600 mb-1">Enhanced Image</span>
+                      <span className="text-sm text-gray-600 mb-1">AI-Enhanced Version</span>
                       <div className="relative border border-gray-200 rounded-md overflow-hidden w-full aspect-[3/2]">
                         <img
                           src="https://cdn.jsdelivr.net/gh/SimoneSarrocco/images-oct@main/BBDM/x_0_0.png"
